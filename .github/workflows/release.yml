@@ -1,0 +1,56 @@
+# Releases one package per tag, using PyPI Trusted Publishing (OIDC) — no
+# long-lived PyPI tokens are stored in the repository.
+#
+# Tag format: <distribution>-v<version>, e.g. university-core-v0.1.0
+# Configure a trusted publisher on PyPI for each distribution, pointing at
+# this workflow and the "pypi" environment.
+name: Release
+
+on:
+  push:
+    tags: ["university-*-v*"]
+
+permissions:
+  contents: read
+
+jobs:
+  test-build:
+    runs-on: ubuntu-latest
+    outputs:
+      package: ${{ steps.meta.outputs.package }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: "3.13"}
+      - id: meta
+        name: Resolve package from tag
+        run: |
+          TAG="${GITHUB_REF_NAME}"
+          PACKAGE="${TAG%-v*}"
+          VERSION="${TAG##*-v}"
+          test -d "packages/${PACKAGE}" || { echo "Unknown package ${PACKAGE}"; exit 1; }
+          echo "package=${PACKAGE}" >> "$GITHUB_OUTPUT"
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+      - name: Test
+        run: |
+          pip install $(printf -- '-e %s[test] ' packages/*/)  # one call: siblings resolve locally
+          python scripts/test_all.py
+      - name: Build and validate
+        run: |
+          pip install build twine
+          python -m build --outdir dist "packages/${{ steps.meta.outputs.package }}"
+          twine check --strict dist/*
+          ls dist | grep -q "${{ steps.meta.outputs.version }}" || { echo "Tag/version mismatch"; exit 1; }
+      - uses: actions/upload-artifact@v4
+        with: {name: dist, path: dist/}
+
+  publish:
+    needs: test-build
+    runs-on: ubuntu-latest
+    environment: pypi
+    permissions:
+      id-token: write  # trusted publishing
+    steps:
+      - uses: actions/download-artifact@v4
+        with: {name: dist, path: dist/}
+      - uses: pypa/gh-action-pypi-publish@release/v1

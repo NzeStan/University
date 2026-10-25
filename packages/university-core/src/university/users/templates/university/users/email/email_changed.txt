@@ -1,0 +1,7 @@
+{% autoescape off %}Hello{% if display_name %} {{ display_name }}{% endif %},
+
+The email address on your account was changed. This address will no longer receive
+account messages.
+
+If you did not make this change, contact support immediately.
+{% endautoescape %}

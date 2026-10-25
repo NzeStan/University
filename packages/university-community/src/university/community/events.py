@@ -1,0 +1,13 @@
+"""Event names published by the community module (payloads carry ids only)."""
+
+COMMUNITY_CREATED = "community.created"
+COMMUNITY_UPDATED = "community.updated"
+COMMUNITY_ARCHIVED = "community.archived"
+MEMBER_JOINED = "community.member.joined"
+MEMBER_REQUESTED = "community.member.requested"
+MEMBER_INVITED = "community.member.invited"
+MEMBER_LEFT = "community.member.left"
+MEMBER_REMOVED = "community.member.removed"
+MEMBER_BANNED = "community.member.banned"
+ROLE_CHANGED = "community.role.changed"
+OWNERSHIP_TRANSFERRED = "community.ownership.transferred"

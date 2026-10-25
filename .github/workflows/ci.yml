@@ -1,0 +1,123 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: "3.13"}
+      - run: pip install "ruff>=0.6"
+      - run: ruff check .
+      - run: ruff format --check .
+
+  typecheck:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: "3.13"}
+      - run: |
+          pip install mypy django-stubs djangorestframework-stubs
+          pip install $(printf -- '-e %s ' packages/*/)  # one call: siblings resolve locally
+      - run: mypy packages/*/src
+        continue-on-error: true  # tightened as type coverage grows
+
+  test:
+    name: test (py${{ matrix.python }}, dj${{ matrix.django }}, ${{ matrix.db }})
+    runs-on: ubuntu-latest
+    needs: lint
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - {python: "3.11", django: "5.2", db: sqlite}
+          - {python: "3.12", django: "5.2", db: postgres}
+          - {python: "3.12", django: "6.0", db: postgres}
+          - {python: "3.13", django: "6.0", db: sqlite}
+          - {python: "3.13", django: "6.1", db: postgres}
+          - {python: "3.14", django: "6.1", db: postgres}
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: university
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U postgres" --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      UNIVERSITY_TEST_DB: ${{ matrix.db }}
+      PGHOST: localhost
+      PGUSER: postgres
+      PGPASSWORD: postgres
+      PGDATABASE: university
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+          allow-prereleases: true
+      - name: Install packages
+        run: |
+          pip install --upgrade pip
+          pip install $(printf -- '-e %s[test] ' packages/*/)  # one call: siblings resolve locally
+          pip install "Django~=${{ matrix.django }}.0"
+          if [ "${{ matrix.db }}" = "postgres" ]; then pip install "psycopg[binary]>=3.1"; fi
+      - name: Check migrations are up to date
+        run: |
+          for pkg in packages/*/; do
+            (cd "$pkg" && DJANGO_SETTINGS_MODULE=tests.settings PYTHONPATH=. python -m django makemigrations --check --dry-run)
+          done
+      - name: Run tests
+        run: python scripts/test_all.py -- --cov --cov-report=xml
+      - name: Validate OpenAPI schema (whole platform)
+        working-directory: integration_tests
+        run: DJANGO_SETTINGS_MODULE=tests.settings PYTHONPATH=. python -m django spectacular --validate --fail-on-warn --file /tmp/schema.yml
+
+  example-project:
+    runs-on: ubuntu-latest
+    needs: lint
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: "3.13"}
+      - working-directory: example_project
+        run: |
+          pip install -r requirements.txt
+          export DJANGO_DEBUG=true
+          python manage.py check
+          python manage.py migrate --noinput
+          python manage.py university_import_institutions data/institutions.sample.json
+          python manage.py university_modules
+
+  build:
+    runs-on: ubuntu-latest
+    needs: lint
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: "3.13"}
+      - run: pip install build twine
+      - run: for pkg in packages/*/; do python -m build --outdir dist "$pkg"; done
+      - run: twine check --strict dist/*
+      - name: Install built wheels together (namespace package check)
+        run: |
+          python -m venv /tmp/wheeltest
+          /tmp/wheeltest/bin/pip install dist/*.whl
+          /tmp/wheeltest/bin/python -c "import university.core, university.institution; print('namespace OK')"
+      - uses: actions/upload-artifact@v4
+        with: {name: dist, path: dist/}

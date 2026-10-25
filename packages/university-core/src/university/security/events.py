@@ -1,0 +1,12 @@
+"""Event names published by the security app."""
+
+USER_LOGGED_IN = "user.logged_in"
+USER_LOGGED_OUT = "user.logged_out"
+SESSION_REVOKED = "security.session.revoked"
+LOGIN_SUSPICIOUS = "security.login.suspicious"
+REFRESH_TOKEN_REUSED = "security.refresh_token.reused"
+LOGIN_LOCKED = "security.login.locked"
+API_KEY_CREATED = "security.api_key.created"
+API_KEY_REVOKED = "security.api_key.revoked"
+MFA_ENABLED = "security.mfa.enabled"
+MFA_DISABLED = "security.mfa.disabled"

@@ -1,0 +1,48 @@
+# Local development stack: PostgreSQL, Redis, API, Celery worker and beat.
+#   docker compose -f example_project/docker-compose.yml up --build
+services:
+  db:
+    image: postgres:17
+    environment:
+      POSTGRES_DB: university
+      POSTGRES_USER: university
+      POSTGRES_PASSWORD: university
+    volumes: [pgdata:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U university"]
+      interval: 5s
+      retries: 10
+
+  redis:
+    image: redis:7
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+
+  api: &app
+    build:
+      context: ..
+      dockerfile: example_project/Dockerfile
+    env_file: [.env]
+    environment:
+      DATABASE_URL: postgres://university:university@db:5432/university
+      REDIS_URL: redis://redis:6379/0
+      CELERY_BROKER_URL: redis://redis:6379/1
+    depends_on:
+      db: {condition: service_healthy}
+      redis: {condition: service_healthy}
+    command: sh -c "python manage.py migrate --noinput && gunicorn config.wsgi:application --bind 0.0.0.0:8000"
+    ports: ["8000:8000"]
+
+  worker:
+    <<: *app
+    command: celery -A config worker --loglevel INFO
+    ports: []
+
+  beat:
+    <<: *app
+    command: celery -A config beat --loglevel INFO
+    ports: []
+
+volumes:
+  pgdata:

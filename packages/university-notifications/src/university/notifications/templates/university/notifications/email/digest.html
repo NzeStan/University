@@ -1,0 +1,9 @@
+{% load i18n %}<!doctype html>
+<html><body style="font-family:Arial,Helvetica,sans-serif;color:#1f2933;line-height:1.5">
+<p style="font-size:16px">{% trans "Here's what you missed:" %}</p>
+<ul>{% for item in items %}<li><a href="{{ item.url }}">{{ item.title }}</a></li>{% endfor %}</ul>
+{% if more %}<p>{% blocktrans count counter=more %}…and {{ counter }} more.{% plural %}…and {{ counter }} more.{% endblocktrans %}</p>{% endif %}
+<p><a href="{{ list_url }}" style="background:#0b6e4f;color:#fff;padding:10px 16px;border-radius:6px;text-decoration:none">{% trans "See everything" %}</a></p>
+<hr style="border:none;border-top:1px solid #e4e7eb">
+<p style="font-size:12px;color:#616e7c"><a href="{{ preferences_url }}">{% trans "Change how often you get this email" %}</a></p>
+</body></html>

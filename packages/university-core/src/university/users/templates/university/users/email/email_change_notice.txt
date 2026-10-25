@@ -1,0 +1,7 @@
+{% autoescape off %}Hello{% if display_name %} {{ display_name }}{% endif %},
+
+Someone requested to change the email address on your account. The change only takes
+effect once the new address is confirmed.
+
+If this wasn't you, change your password immediately.
+{% endautoescape %}

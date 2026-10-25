@@ -1,0 +1,17 @@
+# Local development against the monorepo packages.
+-e ../packages/university-core[postgres,redis,celery,openapi,argon2,cors]
+-e ../packages/university-institution
+-e ../packages/university-social
+-e ../packages/university-moderation
+-e ../packages/university-anonymous
+-e ../packages/university-community
+
+# In a real project, pin released versions instead:
+# university-core[postgres,redis,celery,openapi,argon2,cors]==0.1.*
+# university-institution==0.1.*
+# university-social==0.1.*
+# university-moderation==0.1.*
+# university-anonymous==0.1.*
+# university-community==0.1.*
+
+gunicorn>=22

@@ -1,0 +1,5 @@
+{% autoescape off %}Your verification code is: {{ code }}
+
+It expires in {{ minutes }} minute{{ minutes|pluralize }}. Never share this code with anyone.
+If you did not request it, you can ignore this email.
+{% endautoescape %}

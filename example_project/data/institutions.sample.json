@@ -1,0 +1,61 @@
+[
+  {
+    "name": "Sample Federal University of Technology",
+    "short_name": "SFUT",
+    "slug": "sfut",
+    "type": "university",
+    "ownership": "public",
+    "country": "NG",
+    "region": "Lagos",
+    "city": "Lagos",
+    "website": "https://sfut.example.edu.ng",
+    "domains": ["sfut.example.edu.ng", {"domain": "students.sfut.example.edu.ng"}],
+    "campuses": [
+      {"name": "Main Campus", "slug": "main", "city": "Lagos", "is_main": true},
+      {"name": "City Campus", "slug": "city", "city": "Lagos"}
+    ]
+  },
+  {
+    "name": "Sample State Polytechnic",
+    "short_name": "SSP",
+    "slug": "ssp",
+    "type": "polytechnic",
+    "ownership": "public",
+    "country": "NG",
+    "region": "Kaduna",
+    "city": "Kaduna",
+    "domains": ["ssp.example.edu.ng"],
+    "campuses": [{"name": "Main Campus", "slug": "main", "is_main": true}]
+  },
+  {
+    "name": "Sample College of Education",
+    "short_name": "SCOE",
+    "slug": "scoe",
+    "type": "college_of_education",
+    "ownership": "public",
+    "country": "NG",
+    "region": "Oyo",
+    "city": "Oyo"
+  },
+  {
+    "name": "Sample University of Ghana Coast",
+    "short_name": "SUGC",
+    "slug": "sugc",
+    "type": "university",
+    "ownership": "private",
+    "country": "GH",
+    "region": "Greater Accra",
+    "city": "Accra",
+    "domains": ["sugc.example.edu.gh"]
+  },
+  {
+    "name": "Sample Technical University Nairobi",
+    "short_name": "STUN",
+    "slug": "stun",
+    "type": "university",
+    "ownership": "public",
+    "country": "KE",
+    "region": "Nairobi",
+    "city": "Nairobi"
+  }
+]

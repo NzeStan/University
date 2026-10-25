@@ -1,0 +1,11 @@
+{% autoescape off %}Hello{% if display_name %} {{ display_name }}{% endif %},
+
+Your account ({{ email }}) was just signed in to from a new device or network.
+
+When: {{ when }}
+{% if device %}Device: {{ device }}
+{% endif %}{% if network %}Network: {{ network }}
+{% endif %}
+If this was you, no action is needed. If not, change your password and review your
+active sessions right away.
+{% endautoescape %}

@@ -1,0 +1,8 @@
+{% autoescape off %}Hello{% if display_name %} {{ display_name }}{% endif %},
+
+Confirm this address as the new email for your account:
+
+{{ url }}
+
+If you did not request this change, ignore this email.
+{% endautoescape %}

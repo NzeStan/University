@@ -1,0 +1,68 @@
+# Workspace-level tooling configuration for the University monorepo.
+#
+# This file is NOT a distribution. Each installable package lives under
+# packages/<name>/ with its own pyproject.toml, version and changelog entry.
+
+[tool.ruff]
+target-version = "py311"
+line-length = 120
+extend-exclude = ["**/migrations/**", "templates/module/**"]
+
+[tool.ruff.lint]
+select = [
+    "E", "W", "F",   # pycodestyle, pyflakes
+    "I",             # isort
+    "B",             # bugbear
+    "UP",            # pyupgrade
+    "S",             # bandit (security)
+    "DJ",            # django
+    "C4",            # comprehensions
+    "SIM",           # simplify
+    "RUF",           # ruff-specific
+    "PT",            # pytest style
+    "T20",           # no print()
+]
+ignore = [
+    "RUF012",  # mutable class attributes are idiomatic in Django/DRF classes
+    "DJ001",   # nullable CharFields are deliberate (unique-when-set handles/phones)
+    "SIM108",
+]
+
+[tool.ruff.lint.per-file-ignores]
+"**/tests/**" = ["S101", "S105", "S106", "S311", "PT011", "PT012", "PT018", "B017", "S608", "E501", "SIM117", "RUF059"]
+"**/testing.py" = ["S105"]
+"example_project/**" = ["S105", "S106"]
+"scripts/**" = ["T20", "S603", "S607"]
+"noxfile.py" = ["T20"]
+# Event/audit names such as "account.password.changed" are not secrets.
+"**/actions.py" = ["S105"]
+"**/events.py" = ["S105"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["university"]
+
+[tool.mypy]
+python_version = "3.11"
+strict = false
+warn_unused_ignores = true
+warn_redundant_casts = true
+check_untyped_defs = true
+ignore_missing_imports = true
+exclude = ["migrations/", "tests/", "example_project/", "templates/"]
+
+[tool.coverage.run]
+branch = true
+source = ["university"]
+omit = ["*/migrations/*", "*/tests/*"]
+
+[tool.coverage.report]
+show_missing = true
+skip_covered = true
+exclude_also = ["if TYPE_CHECKING:", "pragma: no cover", "raise NotImplementedError", "\\.\\.\\."]
+
+[tool.bandit]
+exclude_dirs = ["tests", "example_project", ".venv"]
+# B105 (hardcoded password string) only flags names such as "account.password.changed"
+# or "token_refresh". The same check runs through ruff's S105 with targeted per-file
+# exceptions, and real secrets are caught by gitleaks in CI.
+skips = ["B101", "B105"]

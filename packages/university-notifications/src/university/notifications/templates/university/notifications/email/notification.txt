@@ -1,0 +1,8 @@
+{% load i18n %}{% autoescape off %}{{ title }}
+
+{% trans "Open it here:" %} {{ url }}
+
+--
+{% blocktrans %}You're receiving this because of your notification settings on {{ site_name }}.{% endblocktrans %}
+{% trans "Change them:" %} {{ preferences_url }}
+{% endautoescape %}

@@ -1,0 +1,2 @@
+{% autoescape off %}Your verification code
+{% endautoescape %}

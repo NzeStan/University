@@ -1,0 +1,8 @@
+{% autoescape off %}Hello{% if display_name %} {{ display_name }}{% endif %},
+
+Welcome! Please confirm your email address to activate your account:
+
+{{ url }}
+
+This link expires soon. If you did not create an account, you can ignore this email.
+{% endautoescape %}

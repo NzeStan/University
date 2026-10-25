@@ -1,0 +1,8 @@
+# Cross-module integration tests: Core + every level-two package installed together.
+# Run with: python scripts/test_all.py integration
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "tests.settings"
+pythonpath = ["."]
+testpaths = ["tests"]
+addopts = "-ra --strict-markers"
+markers = ["security: security regression tests"]

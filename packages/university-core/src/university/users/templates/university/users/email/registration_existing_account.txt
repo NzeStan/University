@@ -1,0 +1,9 @@
+{% autoescape off %}Hello{% if display_name %} {{ display_name }}{% endif %},
+
+Someone tried to create a new account using this email address, but you already have one.
+
+If this was you, sign in instead or reset your password. If you have not verified your
+account yet, you can request a new verification link from the sign-in page.
+
+If this wasn't you, no action is needed. Your account is safe.
+{% endautoescape %}

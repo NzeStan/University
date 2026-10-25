@@ -1,0 +1,2 @@
+{% autoescape off %}Someone tried to register with your email address
+{% endautoescape %}

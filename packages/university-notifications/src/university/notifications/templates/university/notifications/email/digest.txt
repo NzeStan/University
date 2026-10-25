@@ -1,0 +1,12 @@
+{% load i18n %}{% autoescape off %}{% trans "Here's what you missed:" %}
+{% for item in items %}
+- {{ item.title }}
+  {{ item.url }}{% endfor %}
+{% if more %}
+{% blocktrans count counter=more %}…and {{ counter }} more.{% plural %}…and {{ counter }} more.{% endblocktrans %}{% endif %}
+
+{% trans "See everything:" %} {{ list_url }}
+
+--
+{% trans "Change how often you get this email:" %} {{ preferences_url }}
+{% endautoescape %}

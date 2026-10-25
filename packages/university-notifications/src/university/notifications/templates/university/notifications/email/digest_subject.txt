@@ -1,0 +1,1 @@
+{% load i18n %}{% autoescape off %}{% blocktrans count counter=total %}{{ counter }} new notification on {{ site_name }}{% plural %}{{ counter }} new notifications on {{ site_name }}{% endblocktrans %}{% endautoescape %}
