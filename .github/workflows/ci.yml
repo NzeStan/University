@@ -119,5 +119,5 @@ jobs:
           python -m venv /tmp/wheeltest
           /tmp/wheeltest/bin/pip install dist/*.whl
           /tmp/wheeltest/bin/python -c "import university.core, university.institution; print('namespace OK')"
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with: {name: dist, path: dist/}
