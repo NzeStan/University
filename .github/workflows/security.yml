@@ -28,9 +28,13 @@ jobs:
         with: {python-version: "3.13"}
       - run: |
           python -m pip install --upgrade pip  # audit a current pip, not the runner's bundled one
-          pip install pip-audit
           pip install packages/*/  # one call: siblings resolve locally
-      - run: pip-audit --skip-editable --strict
+      # Audit every third-party dependency. Our own packages are left out: a version bump isn't on
+      # PyPI until it's released, and --strict would fail on it.
+      - run: pip freeze --exclude-editable | grep -vi '^university-' > /tmp/deps.txt
+      - run: |
+          pip install pip-audit
+          pip-audit --strict --disable-pip --no-deps -r /tmp/deps.txt
 
   secrets:
     runs-on: ubuntu-latest
