@@ -11,4 +11,4 @@ referenced by id: processing is asynchronous and this module never imports
 the media module.
 """
 
-__version__ = "0.1.0"
+__version__ = "0.1.1"

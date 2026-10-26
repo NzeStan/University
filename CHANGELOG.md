@@ -103,6 +103,55 @@ version), **Removed**, **Fixed**, **Security**.
 - Owners and admins hold `events.manage` and `podcast.manage` at their community's scope (unused unless
   `university-events` is installed), so they can host community events.
 
+## university-events 0.1.1 — 2026-10-26
+
+### Fixed
+
+- Row locks combined with `select_related()` now lock only the target row (`select_for_update(of=("self",))`). PostgreSQL rejected the previous queries ("FOR UPDATE cannot be applied to the nullable side of an outer join"), and joined rows were being locked needlessly. This broke publishing events, organizer changes and cover uploads on PostgreSQL.
+
+## university-search 0.1.1 — 2026-10-26
+
+### Fixed
+
+- PostgreSQL full-text search now filters on the match itself (`@@`). `ts_rank` gives non-matching documents a tiny non-zero rank, so every visible document was returned.
+
+## university-creator 0.1.1 — 2026-10-26
+
+### Fixed
+
+- Row locks combined with `select_related()` now lock only the target row (`select_for_update(of=("self",))`). PostgreSQL rejected the previous queries ("FOR UPDATE cannot be applied to the nullable side of an outer join"), and joined rows were being locked needlessly.
+- Public profiles list linked accounts in a stable order: verified first, then by follower count, then by provider and handle.
+
+## university-community 0.1.1 — 2026-10-26
+
+### Fixed
+
+- Row locks combined with `select_related()` now lock only the target row (`select_for_update(of=("self",))`). PostgreSQL rejected the previous queries ("FOR UPDATE cannot be applied to the nullable side of an outer join"), and joined rows were being locked needlessly.
+
+## university-institution 0.1.1 — 2026-10-26
+
+### Fixed
+
+- Row locks combined with `select_related()` now lock only the target row (`select_for_update(of=("self",))`). PostgreSQL rejected the previous queries ("FOR UPDATE cannot be applied to the nullable side of an outer join"), and joined rows were being locked needlessly.
+
+## university-moderation 0.1.1 — 2026-10-26
+
+### Fixed
+
+- Row locks combined with `select_related()` now lock only the target row (`select_for_update(of=("self",))`). PostgreSQL rejected the previous queries ("FOR UPDATE cannot be applied to the nullable side of an outer join"), and joined rows were being locked needlessly.
+
+## university-payments 0.1.1 — 2026-10-26
+
+### Fixed
+
+- Row locks combined with `select_related()` now lock only the target row (`select_for_update(of=("self",))`). PostgreSQL rejected the previous queries ("FOR UPDATE cannot be applied to the nullable side of an outer join"), and joined rows were being locked needlessly.
+
+## university-podcast 0.1.1 — 2026-10-26
+
+### Fixed
+
+- Row locks combined with `select_related()` now lock only the target row (`select_for_update(of=("self",))`). PostgreSQL rejected the previous queries ("FOR UPDATE cannot be applied to the nullable side of an outer join"), and joined rows were being locked needlessly.
+
 ## university-analytics 0.1.0 — initial release
 
 ### Added

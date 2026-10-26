@@ -14,4 +14,4 @@ double-entry ledger of escrow, balances and payouts. Core never depends on a
 payment provider.
 """
 
-__version__ = "0.1.0"
+__version__ = "0.1.1"

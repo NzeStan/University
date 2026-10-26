@@ -272,7 +272,7 @@ def leave_community(*, user: Any, community_id: Any) -> None:
 
 def _target(community: Community, user_id: Any) -> CommunityMembership:
     member = (
-        CommunityMembership.objects.select_for_update()
+        CommunityMembership.objects.select_for_update(of=("self",))
         .select_related("user")
         .filter(community=community, user_id=user_id)
         .first()
@@ -442,7 +442,7 @@ def invite(*, actor: Any, community_id: Any, user_id: Any) -> CommunityMembershi
 @transaction.atomic
 def accept_invitation(*, user: Any, community_id: Any) -> CommunityMembership:
     member = (
-        CommunityMembership.objects.select_for_update()
+        CommunityMembership.objects.select_for_update(of=("self",))
         .select_related("community")
         .filter(community_id=community_id, user=user, status=MembershipStatus.INVITED)
         .first()
@@ -500,7 +500,7 @@ def revoke_invite_link(*, actor: Any, community_id: Any, link_id: Any) -> None:
 def join_with_code(*, user: Any, code: str) -> CommunityMembership:
     rate_limit("community_join_code", key=str(user.pk))
     link = (
-        CommunityInviteLink.objects.select_for_update()
+        CommunityInviteLink.objects.select_for_update(of=("self",))
         .select_related("community")
         .filter(code_hash=keyed_hash((code or "").strip(), purpose=INVITE_PURPOSE))
         .first()

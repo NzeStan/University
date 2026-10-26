@@ -260,7 +260,7 @@ def create_season(*, actor: Any, podcast_id: Any, number: int, title: str = "", 
 
 # ---------------------------------------------------------------- episodes
 def _locked_episode(episode_id: Any) -> Episode:
-    episode = Episode.objects.select_for_update().select_related("podcast").filter(pk=episode_id).first()
+    episode = Episode.objects.select_for_update(of=("self",)).select_related("podcast").filter(pk=episode_id).first()
     if episode is None:
         raise NotFound("Episode not found.")
     return episode

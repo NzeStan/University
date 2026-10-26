@@ -262,7 +262,7 @@ def _submit_refund_task_or_now(refund_id: str) -> None:
 @task(name="university.payments.submit_refund")
 def submit_refund(refund_id: str) -> None:
     with transaction.atomic():
-        refund = Refund.objects.select_for_update().select_related("intent").filter(pk=refund_id).first()
+        refund = Refund.objects.select_for_update(of=("self",)).select_related("intent").filter(pk=refund_id).first()
         if refund is None or refund.status != RefundStatus.PENDING or refund.provider_refund_id:
             return
         intent = refund.intent

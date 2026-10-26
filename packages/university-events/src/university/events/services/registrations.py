@@ -233,7 +233,7 @@ def promote_waitlist(event: Event) -> int:
         return 0
     promoted = 0
     queue = (
-        Registration.objects.select_for_update()
+        Registration.objects.select_for_update(of=("self",))
         .filter(event=event, status=S.WAITLISTED)
         .select_related("ticket_type")
         .order_by("waitlisted_at", "created_at")
@@ -260,7 +260,7 @@ def _organizer_registration(actor: Any, event_id: Any, registration_id: Any) -> 
     event = _lock_event(get_event(event_id).pk)
     authorize(actor, "events.manage", event_scope(event), audit_denial=True)
     registration = (
-        Registration.objects.select_for_update()
+        Registration.objects.select_for_update(of=("self",))
         .select_related("ticket_type")
         .filter(pk=registration_id, event=event)
         .first()
@@ -346,7 +346,7 @@ def release_expired_holds() -> int:
         with transaction.atomic():
             event = _lock_event(event_id)
             rows = (
-                Registration.objects.select_for_update()
+                Registration.objects.select_for_update(of=("self",))
                 .filter(event=event, status=S.PENDING_PAYMENT, hold_expires_at__lt=timezone.now())
                 .select_related("ticket_type")
             )
@@ -372,7 +372,7 @@ def check_in(*, actor: Any, event_id: Any, code: str) -> Registration:
     if event.status == EventStatus.CANCELLED:
         raise Conflict("This event was cancelled.", code="event_cancelled")
     registration = (
-        Registration.objects.select_for_update()
+        Registration.objects.select_for_update(of=("self",))
         .select_related("user", "ticket_type")
         .filter(event=event, ticket_lookup__in=lookup_candidates(code))
         .first()

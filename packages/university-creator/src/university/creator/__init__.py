@@ -12,4 +12,4 @@ adapters, configured per deployment. Analytics are daily aggregates built
 from ids-only platform events; no viewer-level records are kept.
 """
 
-__version__ = "0.1.0"
+__version__ = "0.1.1"

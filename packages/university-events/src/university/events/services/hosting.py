@@ -81,7 +81,7 @@ def _manage(actor: Any, event: Event) -> None:
 
 def _locked(event_id: Any) -> Event:
     event = get_event(event_id)
-    return Event.objects.select_for_update().select_related("venue").get(pk=event.pk)
+    return Event.objects.select_for_update(of=("self",)).select_related("venue").get(pk=event.pk)
 
 
 def _unique_slug(title: str) -> str:

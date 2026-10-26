@@ -68,15 +68,16 @@ class DatabaseSearchBackend:
             return self._postgres(qs, query)
         return self._portable(qs, query)
 
-    def _postgres(self, qs: Any, query: SearchQuery) -> list[SearchHit]:  # pragma: no cover - needs PostgreSQL
+    def _postgres(self, qs: Any, query: SearchQuery) -> list[SearchHit]:
         from django.contrib.postgres.search import SearchQuery as PGQuery
         from django.contrib.postgres.search import SearchRank, SearchVector
 
         vector = SearchVector("title", weight="A") + SearchVector("body", weight="B")
         pg_query = PGQuery(query.text, search_type="websearch")
+        # Filter on the match itself (@@): ts_rank gives non-matches a tiny non-zero rank.
         rows = (
-            qs.annotate(rank=SearchRank(vector, pg_query))
-            .filter(rank__gt=0)
+            qs.annotate(document=vector, rank=SearchRank(vector, pg_query))
+            .filter(document=pg_query)
             .order_by("-rank", "-updated_at")[query.offset : query.offset + query.limit]
         )
         return [SearchHit(index=r.index, id=r.object_id, score=float(r.rank)) for r in rows]

@@ -13,4 +13,4 @@ Public API::
     from university.institution.verification import VerificationProvider
 """
 
-__version__ = "0.1.0"
+__version__ = "0.1.1"

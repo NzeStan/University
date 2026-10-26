@@ -310,7 +310,7 @@ def _participation(participation_id: Any) -> tuple[Campaign, Participation]:
     if found is None:
         raise NotFound("Participation not found.")
     campaign = _locked(found.campaign_id)
-    participation = Participation.objects.select_for_update().select_related("profile").get(pk=found.pk)
+    participation = Participation.objects.select_for_update(of=("self",)).select_related("profile").get(pk=found.pk)
     participation.campaign = campaign
     return campaign, participation
 

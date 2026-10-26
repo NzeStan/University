@@ -158,7 +158,7 @@ def request_membership(
 
 def _own_membership(user: Any, membership_id: Any) -> InstitutionMembership:
     membership = (
-        InstitutionMembership.objects.select_for_update()
+        InstitutionMembership.objects.select_for_update(of=("self",))
         .select_related("institution")
         .filter(pk=membership_id, user=user)
         .first()
@@ -208,7 +208,7 @@ def start_verification(
 @transaction.atomic
 def complete_verification(*, user: Any, verification_id: Any, data: Mapping[str, Any]) -> VerificationRequest:
     request = (
-        VerificationRequest.objects.select_for_update()
+        VerificationRequest.objects.select_for_update(of=("self",))
         .select_related("membership", "membership__institution")
         .filter(pk=verification_id, membership__user=user)
         .first()

@@ -86,7 +86,7 @@ def purge(user_id: Any) -> None:
         with transaction.atomic():
             event = _lock_event(event_id)
             registration = (
-                Registration.objects.select_for_update()
+                Registration.objects.select_for_update(of=("self",))
                 .filter(event=event, user_id=user_id)
                 .select_related("ticket_type")
                 .first()

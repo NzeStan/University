@@ -145,7 +145,9 @@ def verify_account(*, user: Any, account_id: Any) -> LinkedAccount:
 def confirm_account(*, actor: Any, account_id: Any, follower_count: int | None = None) -> LinkedAccount:
     """A reviewer confirms ownership (and optionally the follower count) for manual platforms."""
     authorize(actor, "creator.verify", audit_denial=True)
-    account = LinkedAccount.objects.select_for_update().select_related("profile").filter(pk=account_id).first()
+    account = (
+        LinkedAccount.objects.select_for_update(of=("self",)).select_related("profile").filter(pk=account_id).first()
+    )
     if account is None:
         raise NotFound("Account not found.")
     if account.profile.user_id == actor.pk:

@@ -2,11 +2,12 @@ from __future__ import annotations
 
 from typing import Any
 
+from django.db.models import Case, F, IntegerField, Value, When
 from rest_framework import serializers
 
 from university.core.api.schema import extend_schema_field
 from university.core.api.serializers import StrictModelSerializer
-from university.creator.constants import CampaignVisibility, KitVisibility, ProfileStatus
+from university.creator.constants import CampaignVisibility, KitVisibility, OwnershipStatus, ProfileStatus
 from university.creator.models import (
     Campaign,
     CreatorCategory,
@@ -125,7 +126,16 @@ class CreatorProfileSerializer(StrictModelSerializer):
 
     @extend_schema_field(CreatorLinkedAccountSerializer(many=True))
     def get_linked_accounts(self, obj: CreatorProfile) -> list[dict[str, Any]]:
-        return CreatorLinkedAccountSerializer(obj.linked_accounts.filter(is_public=True), many=True).data
+        # Verified accounts lead, then reach; a stable order on every database.
+        accounts = obj.linked_accounts.filter(is_public=True).order_by(
+            Case(
+                When(ownership=OwnershipStatus.VERIFIED, then=Value(0)), default=Value(1), output_field=IntegerField()
+            ),
+            F("follower_count").desc(nulls_last=True),
+            "provider",
+            "handle_key",
+        )
+        return CreatorLinkedAccountSerializer(accounts, many=True).data
 
 
 class CreatorOwnProfileSerializer(CreatorProfileSerializer):

@@ -73,7 +73,12 @@ def withdraw_verification(*, user: Any) -> None:
 @transaction.atomic
 def decide_verification(*, actor: Any, request_id: Any, approve: bool, reason: str = "") -> VerificationRequest:
     authorize(actor, "creator.verify", audit_denial=True)
-    request = VerificationRequest.objects.select_for_update().select_related("profile").filter(pk=request_id).first()
+    request = (
+        VerificationRequest.objects.select_for_update(of=("self",))
+        .select_related("profile")
+        .filter(pk=request_id)
+        .first()
+    )
     if request is None:
         raise NotFound("Request not found.")
     if request.profile.user_id == actor.pk:

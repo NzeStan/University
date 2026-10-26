@@ -69,7 +69,7 @@ def file_appeal(
 @transaction.atomic
 def decide_appeal(*, actor: Any, appeal_id: Any, overturn: bool, reason: str) -> ModerationAppeal:
     appeal = (
-        ModerationAppeal.objects.select_for_update()
+        ModerationAppeal.objects.select_for_update(of=("self",))
         .select_related("action", "action__case", "action__target_user")
         .filter(pk=appeal_id)
         .first()

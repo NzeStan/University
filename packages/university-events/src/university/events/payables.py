@@ -63,7 +63,9 @@ class RegistrationPayable(PayableAdapter):
         if found is None:
             return
         event = _lock_event(found.event_id)
-        registration = Registration.objects.select_for_update().select_related("ticket_type").get(pk=found.pk)
+        registration = (
+            Registration.objects.select_for_update(of=("self",)).select_related("ticket_type").get(pk=found.pk)
+        )
         if registration.status != RegistrationStatus.CONFIRMED or amount_minor < registration.amount_minor:
             return
         _end(registration, event, RegistrationStatus.CANCELLED, reason="Refunded")

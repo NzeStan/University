@@ -10,4 +10,4 @@ modules that own them::
     INSTALLED_APPS = [..., *CORE_APPS, "university.moderation"]
 """
 
-__version__ = "0.1.0"
+__version__ = "0.1.1"
