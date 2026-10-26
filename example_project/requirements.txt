@@ -34,4 +34,4 @@
 # university-trending==0.1.*
 # university-search==0.1.*
 
-gunicorn>=22
+gunicorn>=26.2.0
