@@ -232,4 +232,10 @@ def checkout_fails_when_paid(client, participation_id):
 def test_all_payable_purposes_registered():
     from university.core.payables import payable_purposes
 
-    assert payable_purposes() == ["creator.participation", "events.registration", "marketplace.order"]
+    assert payable_purposes() == [
+        "creator.participation",
+        "events.registration",
+        "marketplace.order",
+        "promotions.campaign",
+        "subscriptions.period",
+    ]

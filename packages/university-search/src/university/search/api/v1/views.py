@@ -23,6 +23,7 @@ class SearchPersonSerializer(serializers.Serializer):
     id = serializers.UUIDField()
     handle = serializers.CharField(allow_null=True)
     display_name = serializers.CharField()
+    avatar_url = serializers.CharField(allow_null=True)
 
 
 def _fingerprint() -> str:

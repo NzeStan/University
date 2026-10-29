@@ -15,6 +15,7 @@ from university.events.constants import (
 )
 from university.events.models import Event, EventOrganizer, EventSession, Registration, TicketType, Venue
 from university.events.tickets import ticket_code
+from university.users.refs import person_ref
 
 
 def _media_url(context: dict[str, Any], field: Any) -> str | None:
@@ -34,12 +35,13 @@ class EventsPersonSerializer(serializers.Serializer):
     id = serializers.UUIDField()
     handle = serializers.CharField(allow_null=True)
     display_name = serializers.CharField()
+    avatar_url = serializers.CharField(allow_null=True)
 
 
 def person(user: Any) -> dict[str, Any] | None:
     if user is None or not user.is_active:
         return None
-    return {"id": user.pk, "handle": user.handle, "display_name": user.display_name or user.handle or ""}
+    return person_ref(user)
 
 
 # ------------------------------------------------------------------ venues
@@ -166,7 +168,7 @@ class EventsViewerSerializer(serializers.Serializer):
 
 class EventsEventListSerializer(StrictModelSerializer):
     host = serializers.SerializerMethodField()
-    venue = EventsVenueSerializer(read_only=True)
+    venue = EventsVenueSerializer(read_only=True, allow_null=True)
     cover_url = serializers.SerializerMethodField()
     spots_left = serializers.SerializerMethodField()
     is_free = serializers.SerializerMethodField()

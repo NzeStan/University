@@ -55,7 +55,7 @@ def rest_framework_settings(**overrides: Any) -> dict[str, Any]:
         "COERCE_DECIMAL_TO_STRING": True,
     }
     if SPECTACULAR_INSTALLED:
-        config["DEFAULT_SCHEMA_CLASS"] = "drf_spectacular.openapi.AutoSchema"
+        config["DEFAULT_SCHEMA_CLASS"] = "university.core.api.openapi.UniversityAutoSchema"
     config.update(overrides)
     return config
 

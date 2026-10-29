@@ -13,4 +13,4 @@ Core's content adapters, and checks every result against the viewer before
 returning it.
 """
 
-__version__ = "0.1.1"
+__version__ = "0.1.2"

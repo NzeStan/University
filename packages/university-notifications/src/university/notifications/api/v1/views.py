@@ -8,7 +8,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from university.core.api.pagination import CursorPagination
-from university.core.api.schema import OpenApiParameter, extend_schema
+from university.core.api.schema import OpenApiParameter, extend_schema, paginated
 from university.notifications import selectors, services
 from university.notifications.api.v1 import serializers as s
 from university.notifications.channels import enabled_channels
@@ -35,7 +35,7 @@ class NotificationListView(APIView):
 
     @extend_schema(
         parameters=[OpenApiParameter("unread", bool), OpenApiParameter("category", str)],
-        responses=s.NotificationSerializer(many=True),
+        responses=paginated(s.NotificationSerializer, style="cursor"),
     )
     def get(self, request: Request) -> Response:
         qs = selectors.feed(

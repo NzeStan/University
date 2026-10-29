@@ -9,7 +9,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from university.core.api.pagination import PageNumberPagination
-from university.core.api.schema import OpenApiParameter, extend_schema
+from university.core.api.schema import OpenApiParameter, extend_schema, paginated
 from university.core.exceptions import AuthenticationFailed, NotFound
 from university.core.idempotency import idempotent
 from university.core.ids import is_valid_uuid
@@ -57,7 +57,7 @@ class ListingListCreateView(APIView):
     permission_classes = [permissions.AllowAny]
 
     @extend_schema(
-        parameters=[OpenApiParameter(p, str) for p in BROWSE_PARAMS], responses=s.MarketListingSerializer(many=True)
+        parameters=[OpenApiParameter(p, str) for p in BROWSE_PARAMS], responses=paginated(s.MarketListingSerializer)
     )
     def get(self, request: Request) -> Response:
         return _paginate(self, request, selectors.browse(request.user, request.query_params), s.MarketListingSerializer)
@@ -135,7 +135,7 @@ class ListingImageDetailView(APIView):
 class MyListingsView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
-    @extend_schema(responses=s.MarketListingSerializer(many=True))
+    @extend_schema(responses=paginated(s.MarketListingSerializer))
     def get(self, request: Request) -> Response:
         qs = Listing.objects.filter(seller=request.user).select_related("category", "seller").order_by("-created_at")
         return _paginate(self, request, qs, s.MarketListingSerializer)
@@ -161,7 +161,7 @@ class SellerDetailView(APIView):
 
 
 class SellerReviewsView(SellerDetailView):
-    @extend_schema(responses=s.MarketReviewSerializer(many=True))
+    @extend_schema(responses=paginated(s.MarketReviewSerializer))
     def get(self, request: Request, lookup: str) -> Response:
         profile = self._profile(request, lookup)
         qs = (
@@ -285,7 +285,7 @@ class MyOrdersView(APIView):
 
     @extend_schema(
         parameters=[OpenApiParameter("role", str, enum=["buyer", "seller"])],
-        responses=s.MarketOrderSerializer(many=True),
+        responses=paginated(s.MarketOrderSerializer),
     )
     def get(self, request: Request) -> Response:
         role = request.query_params.get("role") or "buyer"
@@ -295,6 +295,6 @@ class MyOrdersView(APIView):
 class DisputeQueueView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
-    @extend_schema(responses=s.MarketOrderSerializer(many=True))
+    @extend_schema(responses=paginated(s.MarketOrderSerializer))
     def get(self, request: Request) -> Response:
         return _paginate(self, request, services.disputes_queue(request.user), s.MarketOrderSerializer)

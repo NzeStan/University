@@ -6,7 +6,9 @@ from rest_framework import serializers
 
 from university.community.constants import CommentingPolicy, PostingPolicy, Privacy, Role
 from university.community.models import Community, CommunityMembership
+from university.core.api.schema import extend_schema_field
 from university.core.api.serializers import StrictModelSerializer
+from university.users.refs import PersonRefSerializer, person_ref
 
 
 class CommunitySerializer(StrictModelSerializer):
@@ -78,8 +80,9 @@ class CommunityMemberSerializer(StrictModelSerializer):
         fields = ("user", "role", "status", "joined_at")
         read_only_fields = fields
 
-    def get_user(self, obj: CommunityMembership) -> dict[str, Any]:
-        return {"id": str(obj.user_id), "handle": obj.user.handle, "display_name": obj.user.display_name}
+    @extend_schema_field(PersonRefSerializer)
+    def get_user(self, obj: CommunityMembership) -> dict[str, Any] | None:
+        return person_ref(obj.user)
 
 
 class CommunityMembershipSerializer(StrictModelSerializer):
@@ -114,3 +117,12 @@ class CommunityJoinCodeSerializer(serializers.Serializer):
 
 class CommunityOfficialSerializer(serializers.Serializer):
     official = serializers.BooleanField()
+
+
+class CommunityInviteLinkSerializer(serializers.Serializer):
+    """A new invite link. ``code`` is shown only once; only its hash is stored."""
+
+    id = serializers.UUIDField()
+    code = serializers.CharField()
+    expires_at = serializers.DateTimeField()
+    max_uses = serializers.IntegerField(allow_null=True)

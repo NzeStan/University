@@ -19,18 +19,20 @@ from university.creator.models import (
     VerificationRequest,
 )
 from university.creator.providers import providers
+from university.users.refs import person_ref
 
 
 class CreatorPersonSerializer(serializers.Serializer):
     id = serializers.UUIDField()
     handle = serializers.CharField(allow_null=True)
     display_name = serializers.CharField()
+    avatar_url = serializers.CharField(allow_null=True)
 
 
 def person(user: Any) -> dict[str, Any] | None:
     if user is None or not user.is_active:
         return None
-    return {"id": user.pk, "handle": user.handle, "display_name": user.display_name or user.handle or ""}
+    return person_ref(user)
 
 
 class CreatorCategorySerializer(StrictModelSerializer):

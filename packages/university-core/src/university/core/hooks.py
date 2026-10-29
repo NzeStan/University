@@ -57,6 +57,9 @@ class Hook:
     #: (content_type: str, object_ids: list[str]) -> dict[str, float]. Trending
     #: scores for content (e.g. from university-trending); feeds may rank by them.
     CONTENT_TRENDING_SCORES = "content.trending_scores"
+    #: (user) -> iterable of entitlement keys the user holds (e.g. premium
+    #: features from university-subscriptions). See university.core.entitlements.
+    USER_ENTITLEMENTS = "users.entitlements"
 
 
 @dataclass(frozen=True)

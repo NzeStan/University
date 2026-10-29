@@ -15,7 +15,7 @@ Optional features live in independently installable *level two* packages
 through the module registry, events and hooks.
 """
 
-__version__ = "0.1.0"
+__version__ = "0.1.1"
 
 #: The Django apps that make up University Core, in dependency order.
 #: Use as ``INSTALLED_APPS = [..., *CORE_APPS, ...]``.

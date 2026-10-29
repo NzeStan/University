@@ -23,7 +23,7 @@ from university.core.serialization import to_jsonable
 from university.core.tasks import enqueue, get_task, registered_tasks, task
 from university.core.uploads import FileUploadValidator, is_dangerous, sniff_mime_type, uuid_upload_to
 
-PNG = b"\x89PNG\r\n\x1a\n" + b"\x00" * 64
+PNG = b"\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01\x08\x02\x00\x00\x00\x90wS\xde\x00\x00\x00\x0cIDATx\xdac\xc8\xd5\xb8\t\x00\x02t\x01o\xfbJ\xd2\xe1\x00\x00\x00\x00IEND\xaeB`\x82"  # A real 1x1 PNG: decodes with or without Pillow.
 
 
 # ----------------------------------------------------------------- settings
@@ -408,3 +408,31 @@ def test_content_adapters_default_to_no_backfill_ids():
 
     assert list(ContentAdapter().iter_ids()) == []
     assert Hook.CONTENT_TRENDING_SCORES == "content.trending_scores"
+
+
+def test_entitlements_hook_memoised_and_anonymous_safe(user):
+    from django.contrib.auth.models import AnonymousUser
+
+    from university.core import entitlements
+    from university.core.exceptions import PermissionDenied
+    from university.core.hooks import Hook, hooks
+
+    calls = []
+
+    def provider(u):
+        calls.append(u.pk)
+        return ["premium.badge", ""]
+
+    hooks.register(Hook.USER_ENTITLEMENTS, provider)
+    try:
+        assert entitlements.has_entitlement(user, "premium.badge")
+        assert not entitlements.has_entitlement(user, "")
+        assert entitlements.entitlements(user) == frozenset({"premium.badge"}) and len(calls) == 1
+        entitlements.forget(user)
+        entitlements.entitlements(user)
+        assert len(calls) == 2
+        assert not entitlements.has_entitlement(AnonymousUser(), "premium.badge")
+        with pytest.raises(PermissionDenied):
+            entitlements.ensure_entitlement(user, "premium.other")
+    finally:
+        hooks.unregister(Hook.USER_ENTITLEMENTS, provider)

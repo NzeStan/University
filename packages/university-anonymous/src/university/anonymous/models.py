@@ -112,6 +112,7 @@ class Authorship(models.Model):
     class Kind(models.TextChoices):
         POST = "post", _("Post")
         COMMENT = "comment", _("Comment")
+        MESSAGE = "message", _("Inbox message")
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     kind = models.CharField(max_length=8, choices=Kind.choices)
@@ -192,3 +193,68 @@ class RevealRequest(models.Model):
 
     def __str__(self) -> str:
         return f"Reveal request {self.pk} ({self.status})"
+
+
+class AnonymousInbox(models.Model):
+    """A person's anonymous inbox ("send me anonymous questions"). Off until its owner turns it on."""
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="anonymous_inbox")
+    enabled = models.BooleanField(default=False)
+    prompt = models.CharField(max_length=200, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = _("anonymous inbox")
+        verbose_name_plural = _("anonymous inboxes")
+
+    def __str__(self) -> str:
+        return f"Anonymous inbox of {self.user_id}"
+
+
+class AnonymousMessage(AnonymousBase):
+    """An anonymous message to someone's inbox.
+
+    Authorship lives only in :class:`Authorship` (kind ``message``). ``sender_token`` is a keyed hash
+    of (inbox, sender): it lets the recipient block "whoever sent this" without learning who it
+    is, and it can't link the same sender across different inboxes.
+    """
+
+    inbox = models.ForeignKey(AnonymousInbox, on_delete=models.CASCADE, related_name="messages")
+    body = models.TextField()
+    sender_token = models.CharField(max_length=64)
+    status = models.CharField(max_length=16, choices=ContentStatus.choices, default=ContentStatus.PUBLISHED)
+    moderation_reason = models.CharField(max_length=255, blank=True)
+    read_at = models.DateTimeField(null=True, blank=True)
+    answer = models.TextField(blank=True)
+    answered_at = models.DateTimeField(null=True, blank=True)
+    answer_public = models.BooleanField(default=False)
+
+    class Meta:
+        verbose_name = _("anonymous message")
+        ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=["inbox", "status", "-created_at"], name="univ_anon_msg_inbox"),
+            models.Index(fields=["inbox", "answer_public", "-answered_at"], name="univ_anon_msg_answers"),
+        ]
+
+    def __str__(self) -> str:
+        return f"Anonymous message {self.pk}"
+
+
+class BlockedSender(models.Model):
+    """ "Block whoever sent this": future messages from that sender to this inbox are dropped."""
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    inbox = models.ForeignKey(AnonymousInbox, on_delete=models.CASCADE, related_name="blocked_senders")
+    sender_token = models.CharField(max_length=64)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = _("blocked anonymous sender")
+        constraints = [models.UniqueConstraint(fields=["inbox", "sender_token"], name="univ_anon_blocked_unique")]
+        default_permissions = ()
+
+    def __str__(self) -> str:
+        return f"Blocked sender in {self.inbox_id}"

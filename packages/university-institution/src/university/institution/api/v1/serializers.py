@@ -11,10 +11,13 @@ from typing import Any
 
 from rest_framework import serializers
 
+from university.core.api.schema import extend_schema_field
 from university.core.api.serializers import StrictModelSerializer
+from university.institution.constants import ANNOUNCEMENT_CATEGORIES, AnnouncementAudience, AnnouncementPriority
 from university.institution.models import (
     AcademicSession,
     AcademicUnit,
+    Announcement,
     Campus,
     Institution,
     InstitutionDomain,
@@ -25,6 +28,7 @@ from university.institution.models import (
     Semester,
     VerificationRequest,
 )
+from university.users.refs import PersonRefSerializer, person_ref
 
 
 class InstitutionTypeSerializer(StrictModelSerializer):
@@ -158,10 +162,10 @@ class MembershipSerializer(StrictModelSerializer):
     """A user's own membership."""
 
     institution = InstitutionSummarySerializer(read_only=True)
-    campus = serializers.UUIDField(source="campus_id", read_only=True)
-    academic_unit = serializers.UUIDField(source="academic_unit_id", read_only=True)
-    programme = serializers.UUIDField(source="programme_id", read_only=True)
-    level = serializers.UUIDField(source="level_id", read_only=True)
+    campus = serializers.UUIDField(source="campus_id", read_only=True, allow_null=True)
+    academic_unit = serializers.UUIDField(source="academic_unit_id", read_only=True, allow_null=True)
+    programme = serializers.UUIDField(source="programme_id", read_only=True, allow_null=True)
+    level = serializers.UUIDField(source="level_id", read_only=True, allow_null=True)
 
     class Meta:
         model = InstitutionMembership
@@ -234,10 +238,10 @@ class MemberSerializer(StrictModelSerializer):
     """A membership as seen by institution reviewers — no contact details."""
 
     user = serializers.SerializerMethodField()
-    campus = serializers.UUIDField(source="campus_id", read_only=True)
-    academic_unit = serializers.UUIDField(source="academic_unit_id", read_only=True)
-    programme = serializers.UUIDField(source="programme_id", read_only=True)
-    level = serializers.UUIDField(source="level_id", read_only=True)
+    campus = serializers.UUIDField(source="campus_id", read_only=True, allow_null=True)
+    academic_unit = serializers.UUIDField(source="academic_unit_id", read_only=True, allow_null=True)
+    programme = serializers.UUIDField(source="programme_id", read_only=True, allow_null=True)
+    level = serializers.UUIDField(source="level_id", read_only=True, allow_null=True)
     pending_verification = serializers.SerializerMethodField()
 
     class Meta:
@@ -261,8 +265,9 @@ class MemberSerializer(StrictModelSerializer):
         )
         read_only_fields = fields
 
-    def get_user(self, obj: InstitutionMembership) -> dict[str, Any]:
-        return {"id": str(obj.user_id), "handle": obj.user.handle, "display_name": obj.user.display_name}
+    @extend_schema_field(PersonRefSerializer)
+    def get_user(self, obj: InstitutionMembership) -> dict[str, Any] | None:
+        return person_ref(obj.user)
 
     def get_pending_verification(self, obj: InstitutionMembership) -> dict[str, Any] | None:
         from university.institution.constants import OPEN_VERIFICATION_STATUSES
@@ -277,3 +282,62 @@ class ReviewSerializer(serializers.Serializer):
 
 class RequiredReasonSerializer(serializers.Serializer):
     reason = serializers.CharField(max_length=255)
+
+
+# ------------------------------------------------------------------ announcements
+class InstitutionAnnouncerSerializer(serializers.Serializer):
+    id = serializers.UUIDField()
+    name = serializers.CharField()
+    slug = serializers.CharField()
+    is_verified = serializers.BooleanField()
+
+
+class InstitutionAnnouncementSerializer(StrictModelSerializer):
+    """An official announcement. ``verified`` is true when the institution itself is verified."""
+
+    institution = serializers.SerializerMethodField()
+    campus = serializers.UUIDField(source="campus_id", read_only=True, allow_null=True)
+    academic_unit = serializers.UUIDField(source="academic_unit_id", read_only=True, allow_null=True)
+    verified = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Announcement
+        fields = (
+            "id",
+            "institution",
+            "title",
+            "body",
+            "category",
+            "audience",
+            "campus",
+            "academic_unit",
+            "priority",
+            "pinned",
+            "status",
+            "verified",
+            "published_at",
+            "expires_at",
+            "created_at",
+        )
+        read_only_fields = fields
+
+    @extend_schema_field(InstitutionAnnouncerSerializer)
+    def get_institution(self, obj: Announcement) -> dict[str, Any]:
+        i = obj.institution
+        return {"id": str(i.pk), "name": i.name, "slug": i.slug, "is_verified": i.is_verified}
+
+    def get_verified(self, obj: Announcement) -> bool:
+        return bool(obj.institution.is_verified)
+
+
+class InstitutionAnnouncementWriteSerializer(serializers.Serializer):
+    title = serializers.CharField(max_length=200)
+    body = serializers.CharField(max_length=10000)
+    category = serializers.ChoiceField(choices=ANNOUNCEMENT_CATEGORIES, default="general")
+    audience = serializers.ChoiceField(choices=AnnouncementAudience.choices, default=AnnouncementAudience.MEMBERS)
+    campus = serializers.UUIDField(required=False, allow_null=True)
+    academic_unit = serializers.UUIDField(required=False, allow_null=True)
+    priority = serializers.ChoiceField(choices=AnnouncementPriority.choices, default=AnnouncementPriority.NORMAL)
+    pinned = serializers.BooleanField(default=False)
+    expires_at = serializers.DateTimeField(required=False, allow_null=True)
+    publish = serializers.BooleanField(default=False, write_only=True, help_text="Publish immediately (create only).")

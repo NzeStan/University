@@ -12,7 +12,7 @@ from university.community.api.v1 import serializers as s
 from university.community.constants import MembershipStatus, Privacy
 from university.community.models import CommunityMembership
 from university.core.api.pagination import PageNumberPagination
-from university.core.api.schema import OpenApiParameter, OpenApiTypes, extend_schema
+from university.core.api.schema import OpenApiParameter, extend_schema, paginated
 from university.core.exceptions import AuthenticationFailed, NotFound
 from university.permissions.services import authorize
 
@@ -33,7 +33,7 @@ class CommunityListCreateView(APIView):
 
     @extend_schema(
         parameters=[OpenApiParameter(p, str) for p in ("q", "kind", "scope_type", "scope_id", "official")],
-        responses=s.CommunitySerializer(many=True),
+        responses=paginated(s.CommunitySerializer),
     )
     def get(self, request: Request) -> Response:
         paginator = PageNumberPagination()
@@ -114,7 +114,7 @@ class LeaveView(APIView):
 class MemberListView(APIView):
     permission_classes = [permissions.AllowAny]
 
-    @extend_schema(parameters=[OpenApiParameter("role", str)], responses=s.CommunityMemberSerializer(many=True))
+    @extend_schema(parameters=[OpenApiParameter("role", str)], responses=paginated(s.CommunityMemberSerializer))
     def get(self, request: Request, community_id: Any) -> Response:
         community = selectors.get_visible_community(request.user, community_id)
         if community.privacy == Privacy.PRIVATE:
@@ -132,7 +132,7 @@ class _ManagerQueueView(APIView):
     permission_classes = [permissions.IsAuthenticated]
     status_filter = MembershipStatus.PENDING
 
-    @extend_schema(responses=s.CommunityMemberSerializer(many=True))
+    @extend_schema(responses=paginated(s.CommunityMemberSerializer))
     def get(self, request: Request, community_id: Any) -> Response:
         community = selectors.get_visible_community(request.user, community_id)
         authorize(request.user, "community.members.manage", selectors.scope_of(community))
@@ -212,7 +212,7 @@ class InvitationResponseView(APIView):
     permission_classes = [permissions.IsAuthenticated]
     accept = True
 
-    @extend_schema(request=None, responses=OpenApiTypes.OBJECT)
+    @extend_schema(request=None, responses={200: s.CommunityMembershipSerializer, 204: None})
     def post(self, request: Request, community_id: Any) -> Response:
         if self.accept:
             member = services.accept_invitation(user=request.user, community_id=community_id)
@@ -224,7 +224,7 @@ class InvitationResponseView(APIView):
 class InviteLinkView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
-    @extend_schema(request=s.CommunityInviteLinkCreateSerializer, responses={201: OpenApiTypes.OBJECT})
+    @extend_schema(request=s.CommunityInviteLinkCreateSerializer, responses={201: s.CommunityInviteLinkSerializer})
     def post(self, request: Request, community_id: Any) -> Response:
         serializer = s.CommunityInviteLinkCreateSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -260,7 +260,7 @@ class JoinWithCodeView(APIView):
 class MyCommunitiesView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
-    @extend_schema(responses=s.CommunityMembershipSerializer(many=True))
+    @extend_schema(responses=paginated(s.CommunityMembershipSerializer))
     def get(self, request: Request) -> Response:
         paginator = PageNumberPagination()
         page = paginator.paginate_queryset(selectors.my_communities(request.user), request, view=self)

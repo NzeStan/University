@@ -12,4 +12,4 @@ Public API::
     from university.social.feeds import FeedProvider, get_feed
 """
 
-__version__ = "0.1.0"
+__version__ = "0.1.1"

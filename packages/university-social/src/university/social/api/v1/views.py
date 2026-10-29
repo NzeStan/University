@@ -10,7 +10,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from university.core.api.pagination import CursorPagination, PageNumberPagination
-from university.core.api.schema import OpenApiParameter, OpenApiTypes, extend_schema
+from university.core.api.schema import OpenApiParameter, extend_schema, paginated
 from university.core.exceptions import AuthenticationFailed, NotFound, ValidationError
 from university.core.ids import is_valid_uuid
 from university.social import selectors, services
@@ -61,7 +61,7 @@ class PostPageView(APIView):
     def get_posts(self, request: Request, **kwargs: Any) -> Any:
         raise NotImplementedError
 
-    @extend_schema(parameters=[OpenApiParameter("cursor", str)], responses=OpenApiTypes.OBJECT)
+    @extend_schema(parameters=[OpenApiParameter("cursor", str)], responses=paginated(s.PostSerializer, style="cursor"))
     def get(self, request: Request, **kwargs: Any) -> Response:
         queryset = selectors.with_viewer_state(self.get_posts(request, **kwargs), request.user)
         paginator = CursorPagination()
@@ -81,7 +81,7 @@ def _uuid_or_404(value: Any) -> Any:
 class PostCreateView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
-    @extend_schema(request=s.PostCreateSerializer, responses={201: OpenApiTypes.OBJECT})
+    @extend_schema(request=s.PostCreateSerializer, responses={201: s.PostSerializer})
     def post(self, request: Request) -> Response:
         serializer = s.PostCreateSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -102,12 +102,12 @@ class PostCreateView(APIView):
 class PostDetailView(APIView):
     permission_classes = [permissions.AllowAny]
 
-    @extend_schema(responses=OpenApiTypes.OBJECT)
+    @extend_schema(responses=s.PostSerializer)
     def get(self, request: Request, post_id: Any) -> Response:
         selectors.get_visible_post(request.user, post_id)
         return Response(render_post(request, post_id))
 
-    @extend_schema(request=s.PostUpdateSerializer, responses=OpenApiTypes.OBJECT)
+    @extend_schema(request=s.PostUpdateSerializer, responses=s.PostSerializer)
     def patch(self, request: Request, post_id: Any) -> Response:
         if not request.user.is_authenticated:
             raise AuthenticationFailed()
@@ -128,7 +128,8 @@ class FeedView(APIView):
     permission_classes = [permissions.AllowAny]
 
     @extend_schema(
-        parameters=[OpenApiParameter("offset", int), OpenApiParameter("limit", int)], responses=OpenApiTypes.OBJECT
+        parameters=[OpenApiParameter("cursor", str), OpenApiParameter("offset", int), OpenApiParameter("limit", int)],
+        responses=s.SocialFeedPageSerializer,
     )
     def get(self, request: Request, name: str) -> Response:
         feed = get_feed(name)
@@ -184,7 +185,7 @@ class BookmarksView(PostPageView):
 class HashtagSearchView(APIView):
     permission_classes = [permissions.AllowAny]
 
-    @extend_schema(parameters=[OpenApiParameter("q", str)], responses=OpenApiTypes.OBJECT)
+    @extend_schema(parameters=[OpenApiParameter("q", str)], responses=s.HashtagSerializer(many=True))
     def get(self, request: Request) -> Response:
         from university.social.models import Hashtag
 
@@ -199,7 +200,7 @@ class HashtagSearchView(APIView):
 class PostReactionView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
-    @extend_schema(request=s.ReactionSerializer, responses=OpenApiTypes.OBJECT)
+    @extend_schema(request=s.ReactionSerializer, responses=s.PostSerializer)
     def post(self, request: Request, post_id: Any) -> Response:
         serializer = s.ReactionSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -215,7 +216,7 @@ class PostReactionView(APIView):
 class RepostView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
-    @extend_schema(request=s.RepostSerializer, responses={201: OpenApiTypes.OBJECT})
+    @extend_schema(request=s.RepostSerializer, responses={201: s.PostSerializer})
     def post(self, request: Request, post_id: Any) -> Response:
         serializer = s.RepostSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -245,7 +246,7 @@ class BookmarkView(APIView):
 class PollVoteView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
-    @extend_schema(request=s.PollVoteSerializer, responses=OpenApiTypes.OBJECT)
+    @extend_schema(request=s.PollVoteSerializer, responses=s.PostSerializer)
     def post(self, request: Request, post_id: Any) -> Response:
         serializer = s.PollVoteSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -257,7 +258,9 @@ class PollVoteView(APIView):
 class CommentListCreateView(APIView):
     permission_classes = [permissions.AllowAny]
 
-    @extend_schema(parameters=[OpenApiParameter("parent", str)], responses=s.CommentSerializer(many=True))
+    @extend_schema(
+        parameters=[OpenApiParameter("parent", str)], responses=paginated(s.CommentSerializer, style="cursor")
+    )
     def get(self, request: Request, post_id: Any) -> Response:
         post = selectors.get_visible_post(request.user, post_id)
         parent = None
@@ -365,7 +368,7 @@ class _UserListView(APIView):
     permission_classes = [permissions.AllowAny]
     direction = "followers"
 
-    @extend_schema(responses=s.UserSummarySerializer(many=True))
+    @extend_schema(responses=paginated(s.UserSummarySerializer))
     def get(self, request: Request, user_id: Any) -> Response:
         target = get_visible_user(viewer=request.user, user_id=user_id)
         profile = services.get_social_profile(target)
@@ -392,7 +395,7 @@ class FollowingView(_UserListView):
 class FollowRequestsView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
-    @extend_schema(responses=s.FollowSerializer(many=True))
+    @extend_schema(responses=paginated(s.FollowSerializer))
     def get(self, request: Request) -> Response:
         qs = Follow.objects.filter(followee=request.user, status=FollowStatus.PENDING).select_related("follower")
         paginator = PageNumberPagination()
@@ -461,7 +464,7 @@ class _MyEdgesView(APIView):
     owner_field = "blocker"
     target_field = "blocked"
 
-    @extend_schema(responses=s.UserSummarySerializer(many=True))
+    @extend_schema(responses=paginated(s.UserSummarySerializer))
     def get(self, request: Request) -> Response:
         qs = self.model.objects.filter(**{self.owner_field: request.user}).select_related(self.target_field)
         paginator = PageNumberPagination()

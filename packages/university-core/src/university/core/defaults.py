@@ -164,6 +164,14 @@ DEFAULTS: dict[str, Any] = {
         # Soft-deleted accounts are anonymised after this grace period.
         "DELETION_GRACE_PERIOD_DAYS": 30,
         "DEFAULT_PROFILE_VISIBILITY": "public",
+        # Profile photos: validated by content, stripped of metadata (EXIF/GPS), cropped square and
+        # re-encoded. Needs Pillow: pip install 'university-core[images]'.
+        "AVATAR": {
+            "MAX_BYTES": 5 * 1024 * 1024,
+            "MIME_TYPES": ["image/jpeg", "image/png", "image/webp"],
+            "SIZE": 512,
+            "QUALITY": 85,
+        },
         # Links embedded in emails. {token}/{uid} are substituted.
         "FRONTEND_URLS": {
             "VERIFY_EMAIL": "http://localhost:3000/verify-email?token={token}",

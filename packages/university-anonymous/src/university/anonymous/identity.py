@@ -77,3 +77,8 @@ def pseudonym_for(token: str) -> str:
     nouns = anonymous_settings.get("PSEUDONYM_NOUNS")
     value = int(token[:16], 16)
     return f"{adjectives[value % len(adjectives)]} {nouns[(value // len(adjectives)) % len(nouns)]}"
+
+
+def sender_token(inbox_id: Any, user_id: Any) -> str:
+    """Stable per (inbox, sender); unlinkable across inboxes without the key."""
+    return keyed_hash(f"{inbox_id}:{user_id}", purpose="anonymous-inbox-sender")

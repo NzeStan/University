@@ -16,6 +16,15 @@ DEFAULTS: dict[str, Any] = {
         "books": {"name": "Books", "children": {"textbooks": "Textbooks", "novels": "Novels"}},
         "fashion": "Fashion",
         "hostel": {"name": "Hostel and home", "children": {"furniture": "Furniture", "kitchen": "Kitchen"}},
+        "accommodation": {
+            "name": "Accommodation",
+            "children": {
+                "hostel-space": "Hostel space",
+                "apartments": "Apartments and self-contains",
+                "roommates": "Roommates wanted",
+                "short-stay": "Short stays",
+            },
+        },
         "services": {
             "name": "Services",
             "children": {"tutoring": "Tutoring", "design": "Design", "repairs": "Repairs"},

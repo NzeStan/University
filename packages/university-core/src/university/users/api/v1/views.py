@@ -5,6 +5,7 @@ from typing import Any
 from django.contrib.auth import get_user_model
 from django.utils.module_loading import import_string
 from rest_framework import permissions, status
+from rest_framework.parsers import MultiPartParser
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -43,7 +44,7 @@ class PublicAPIView(APIView):
 class RegisterView(PublicAPIView):
     throttle_scope = "registration"
 
-    @extend_schema(request=s.RegisterSerializer, responses={201: OpenApiTypes.OBJECT, 202: DetailSerializer})
+    @extend_schema(request=s.RegisterSerializer, responses={201: s.RegisteredSerializer, 202: DetailSerializer})
     def post(self, request: Request) -> Response:
         serializer = s.RegisterSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -127,6 +128,7 @@ class EmailChangeConfirmView(PublicAPIView):
 # --------------------------------------------------------------------- me
 class MeView(APIView):
     permission_classes = [permissions.IsAuthenticated]
+    documented_delete_body = True  # DELETE takes the password (see UniversityAutoSchema)
 
     @property
     def throttle_scope(self) -> str | None:  # type: ignore[override]
@@ -149,6 +151,25 @@ class MeView(APIView):
         serializer.is_valid(raise_exception=True)
         services.delete_account(request.user, password=serializer.validated_data["password"])
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class AvatarView(APIView):
+    """Upload or remove your profile photo."""
+
+    permission_classes = [permissions.IsAuthenticated]
+    parser_classes = [MultiPartParser]
+    throttle_scope = "upload"
+
+    @extend_schema(request={"multipart/form-data": s.AvatarUploadSerializer}, responses=s.MeSerializer)
+    def post(self, request: Request) -> Response:
+        serializer = s.AvatarUploadSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        user = services.set_avatar(request.user, serializer.validated_data["file"])
+        return Response(me_serializer_class()(user).data)
+
+    @extend_schema(request=None, responses=s.MeSerializer)
+    def delete(self, request: Request) -> Response:
+        return Response(me_serializer_class()(services.remove_avatar(request.user)).data)
 
 
 class PasswordChangeView(APIView):
@@ -252,7 +273,23 @@ class SecuritySettingsView(_SettingsView):
 class ConsentView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
-    @extend_schema(responses=OpenApiTypes.OBJECT)
+    @extend_schema(
+        responses={
+            200: {
+                "type": "object",
+                "description": "Your latest decision for each consent purpose.",
+                "additionalProperties": {
+                    "type": "object",
+                    "properties": {
+                        "granted": {"type": "boolean"},
+                        "version": {"type": "string"},
+                        "recorded_at": {"type": "string", "format": "date-time"},
+                    },
+                    "required": ["granted", "version", "recorded_at"],
+                },
+            }
+        }
+    )
     def get(self, request: Request) -> Response:
         from university.users.services.data import current_consents
 

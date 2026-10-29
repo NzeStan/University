@@ -8,18 +8,20 @@ from university.core.api.schema import extend_schema_field
 from university.core.api.serializers import StrictModelSerializer
 from university.podcast.constants import EpisodeType, MemberRole, ShowVisibility, TranscriptFormat
 from university.podcast.models import Clip, Episode, EpisodeGuest, Podcast, PodcastMember, Season, Transcript
+from university.users.refs import person_ref
 
 
 class PodcastPersonSerializer(serializers.Serializer):
     id = serializers.UUIDField()
     handle = serializers.CharField(allow_null=True)
     display_name = serializers.CharField()
+    avatar_url = serializers.CharField(allow_null=True)
 
 
 def person(user: Any) -> dict[str, Any] | None:
     if user is None or not user.is_active:
         return None
-    return {"id": user.pk, "handle": user.handle, "display_name": user.display_name or user.handle or ""}
+    return person_ref(user)
 
 
 class PodcastScopeRefSerializer(serializers.Serializer):
@@ -249,3 +251,31 @@ class PodcastPlayResultSerializer(serializers.Serializer):
 
 class PodcastGuestResponseSerializer(serializers.Serializer):
     accept = serializers.BooleanField()
+
+
+class PodcastEpisodeStatsSerializer(serializers.Serializer):
+    episode_id = serializers.UUIDField()
+    title = serializers.CharField()
+    plays = serializers.IntegerField()
+    completions = serializers.IntegerField()
+
+
+class PodcastDailyStatsSerializer(serializers.Serializer):
+    date = serializers.DateField()
+    plays = serializers.IntegerField()
+    completions = serializers.IntegerField()
+
+
+class PodcastAnalyticsSerializer(serializers.Serializer):
+    """Aggregate listening only: never who listened."""
+
+    from_ = serializers.DateField()
+    to = serializers.DateField()
+    subscribers = serializers.IntegerField()
+    episodes = PodcastEpisodeStatsSerializer(many=True)
+    daily = PodcastDailyStatsSerializer(many=True)
+
+    def get_fields(self):
+        fields = super().get_fields()
+        fields["from"] = fields.pop("from_")
+        return fields

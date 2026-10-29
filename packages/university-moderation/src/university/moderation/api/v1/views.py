@@ -9,7 +9,7 @@ from rest_framework.views import APIView
 
 from university.audit.services import record as audit
 from university.core.api.pagination import PageNumberPagination
-from university.core.api.schema import OpenApiParameter, extend_schema
+from university.core.api.schema import OpenApiParameter, extend_schema, paginated
 from university.moderation import selectors, services
 from university.moderation.api.v1 import serializers as s
 from university.moderation.models import ModerationRule, ReportReason
@@ -90,7 +90,7 @@ class CaseListView(APIView):
 
     @extend_schema(
         parameters=[OpenApiParameter(p, str) for p in ("status", "content_type", "scope_type", "scope_id", "assigned")],
-        responses=s.CaseListSerializer(many=True),
+        responses=paginated(s.CaseListSerializer),
     )
     def get(self, request: Request) -> Response:
         paginator = PageNumberPagination()
@@ -142,7 +142,7 @@ class CaseActionView(APIView):
 class AppealQueueView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
-    @extend_schema(parameters=[OpenApiParameter("status", str)], responses=s.AppealSerializer(many=True))
+    @extend_schema(parameters=[OpenApiParameter("status", str)], responses=paginated(s.AppealSerializer))
     def get(self, request: Request) -> Response:
         paginator = PageNumberPagination()
         page = paginator.paginate_queryset(

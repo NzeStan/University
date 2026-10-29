@@ -14,6 +14,7 @@ from university.users.services.account import (
     request_password_reset,
     update_profile,
 )
+from university.users.services.avatars import avatar_url, remove_avatar, set_avatar
 from university.users.services.data import export_user_data, record_consent
 from university.users.services.lifecycle import (
     ban_user,
@@ -46,6 +47,7 @@ from university.users.services.verification import (
 
 __all__ = [
     "RegistrationResult",
+    "avatar_url",
     "ban_user",
     "change_password",
     "confirm_email_change",
@@ -63,6 +65,7 @@ __all__ = [
     "reactivate_user",
     "record_consent",
     "register_user",
+    "remove_avatar",
     "remove_phone_number",
     "request_email_change",
     "request_password_reset",
@@ -70,6 +73,7 @@ __all__ = [
     "resend_verification_email",
     "restore_user",
     "send_verification_email",
+    "set_avatar",
     "suspend_user",
     "update_profile",
     "update_settings",

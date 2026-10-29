@@ -22,12 +22,13 @@ from university.moderation.models import (
     Report,
     ReportReason,
 )
+from university.users.refs import person_ref
 
 
 def user_summary(user: Any) -> dict[str, Any] | None:
     if user is None:
         return None
-    return {"id": str(user.pk), "handle": user.handle, "display_name": user.display_name}
+    return person_ref(user)
 
 
 class ReasonSerializer(StrictModelSerializer):

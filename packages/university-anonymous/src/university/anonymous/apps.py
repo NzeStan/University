@@ -48,9 +48,9 @@ class AnonymousConfig(UniversityAppConfig):
         ]
 
     def get_content_adapters(self) -> list[Any]:
-        from university.anonymous.content import AnonymousCommentAdapter, AnonymousPostAdapter
+        from university.anonymous.content import AnonymousCommentAdapter, AnonymousMessageAdapter, AnonymousPostAdapter
 
-        return [AnonymousPostAdapter(), AnonymousCommentAdapter()]
+        return [AnonymousPostAdapter(), AnonymousCommentAdapter(), AnonymousMessageAdapter()]
 
     def get_throttle_rates(self) -> dict[str, str | None]:
         return {
@@ -59,6 +59,9 @@ class AnonymousConfig(UniversityAppConfig):
             "anonymous_comment": "30/hour",
             "anonymous_reaction": "300/hour",
             "anonymous_reveal": "10/day",
+            # Per sender, per inbox; and per sender across all inboxes.
+            "anonymous_message": "3/hour",
+            "anonymous_message_daily": "30/day",
         }
 
     def register_hooks(self, hooks: HookRegistry) -> None:

@@ -24,6 +24,7 @@ from university.core.providers.search import SearchQuery
 from university.core.ratelimit import rate_limit
 from university.search.backends import get_backend
 from university.search.conf import search_settings
+from university.users.refs import person_ref
 
 logger = logging.getLogger("university.search")
 
@@ -112,7 +113,7 @@ def people(*, viewer: Any, q: str, fingerprint: str = "") -> list[dict[str, Any]
     for user in candidates:
         if not can_view_profile(viewer, user):
             continue  # Blocks and other module rules.
-        results.append({"id": user.pk, "handle": user.handle, "display_name": user.display_name or user.handle or ""})
+        results.append(person_ref(user))
         if len(results) >= int(search_settings.get("PEOPLE_MAX_RESULTS", 20)):
             break
     return results

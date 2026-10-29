@@ -11,4 +11,4 @@ module — such as university-payments — can take the money and hold it in
 escrow until the buyer confirms delivery. Cash on pickup works without one.
 """
 
-__version__ = "0.1.0"
+__version__ = "0.1.1"

@@ -1,7 +1,7 @@
 version: 2
 updates:
   - package-ecosystem: pip
-    directories: ["/packages/university-core", "/packages/university-institution", "/packages/university-social", "/packages/university-moderation", "/packages/university-anonymous", "/packages/university-community", "/packages/university-notifications", "/packages/university-events", "/packages/university-creator", "/packages/university-payments", "/packages/university-marketplace", "/packages/university-media", "/packages/university-podcast", "/packages/university-analytics", "/packages/university-trending", "/packages/university-search", "/example_project"]
+    directories: ["/packages/university-core", "/packages/university-institution", "/packages/university-social", "/packages/university-moderation", "/packages/university-anonymous", "/packages/university-community", "/packages/university-notifications", "/packages/university-events", "/packages/university-creator", "/packages/university-payments", "/packages/university-marketplace", "/packages/university-media", "/packages/university-podcast", "/packages/university-analytics", "/packages/university-trending", "/packages/university-search", "/packages/university-opportunities", "/packages/university-messaging", "/packages/university-promotions", "/packages/university-subscriptions", "/example_project"]
     schedule: {interval: weekly}
     groups:
       django: {patterns: ["Django", "djangorestframework*", "drf-*"]}

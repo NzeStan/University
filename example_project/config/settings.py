@@ -72,6 +72,10 @@ INSTALLED_APPS = [
     "university.analytics",
     "university.trending",
     "university.search",
+    "university.opportunities",
+    "university.messaging",
+    "university.promotions",
+    "university.subscriptions",
 ]
 
 CORS_ENABLED = env_bool("CORS_ENABLED", False)
@@ -184,6 +188,10 @@ SPECTACULAR_SETTINGS = spectacular_settings(
         "EventFormatEnum": "university.events.constants.EventFormat",
         "PodcastStatusEnum": "university.podcast.constants.ShowStatus",
         "EpisodeStatusEnum": "university.podcast.constants.EpisodeStatus",
+        "AnnouncementAudienceEnum": "university.institution.constants.AnnouncementAudience",
+        "OpportunityKindEnum": "university.opportunities.constants.OpportunityKind",
+        "CampaignKindEnum": "university.promotions.models.CampaignKind",
+        "OpportunityAudienceEnum": "university.opportunities.constants.OpportunityAudience",
     },
 )
 

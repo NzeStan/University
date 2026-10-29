@@ -12,4 +12,4 @@ importing the module that defines the scope. Ticketing is free by default;
 paid tickets plug into a payments module through events, never imports.
 """
 
-__version__ = "0.1.1"
+__version__ = "0.1.2"

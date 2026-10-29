@@ -20,8 +20,12 @@
 | `university-analytics` | `university.analytics` | ✅ 0.1 | core |
 | `university-trending` | `university.trending` | ✅ 0.1 | core |
 | `university-search` | `university.search` | ✅ 0.1 | core |
+| `university-opportunities` | `university.opportunities` | ✅ 0.1 | core |
+| `university-messaging` | `university.messaging` | ✅ 0.1 | core |
+| `university-promotions` | `university.promotions` | ✅ 0.1 | core (+ payments to charge) |
+| `university-subscriptions` | `university.subscriptions` | ✅ 0.1 | core (+ payments to charge) |
 
-Guides: [institution module](institution.md) · [social module](social.md) · [moderation module](moderation.md) · [anonymous module](anonymous.md) · [community module](community.md) · [notifications module](notifications.md) · [events module](events.md) · [creator module](creator.md) · [payments module](payments.md) · [marketplace module](marketplace.md) · [media module](media.md) · [podcast module](podcast.md) · [analytics module](analytics.md) · [trending module](trending.md) · [search module](search.md) · [writing a module](writing-a-module.md).
+Guides: [institution module](institution.md) · [social module](social.md) · [moderation module](moderation.md) · [anonymous module](anonymous.md) · [community module](community.md) · [notifications module](notifications.md) · [events module](events.md) · [creator module](creator.md) · [payments module](payments.md) · [marketplace module](marketplace.md) · [media module](media.md) · [podcast module](podcast.md) · [analytics module](analytics.md) · [trending module](trending.md) · [search module](search.md) · [opportunities module](opportunities.md) · [messaging module](messaging.md) · [promotions module](promotions.md) · [subscriptions module](subscriptions.md) · [writing a module](writing-a-module.md).
 
 ## Planned module designs
 

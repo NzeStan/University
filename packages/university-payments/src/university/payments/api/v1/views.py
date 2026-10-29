@@ -8,7 +8,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from university.core.api.pagination import PageNumberPagination
-from university.core.api.schema import OpenApiParameter, extend_schema
+from university.core.api.schema import OpenApiParameter, extend_schema, paginated
 from university.core.exceptions import NotFound
 from university.core.idempotency import idempotent
 from university.payments import services
@@ -66,7 +66,7 @@ class CheckoutView(APIView):
 class MyPaymentsView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
-    @extend_schema(responses=s.PaymentIntentSerializer(many=True))
+    @extend_schema(responses=paginated(s.PaymentIntentSerializer))
     def get(self, request: Request) -> Response:
         qs = PaymentIntent.objects.filter(payer=request.user).order_by("-created_at")
         return _paginate(self, request, qs, s.PaymentIntentSerializer)
@@ -120,7 +120,7 @@ class MyBalanceView(APIView):
 class MyPayoutsView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
-    @extend_schema(responses=s.PayoutSerializer(many=True))
+    @extend_schema(responses=paginated(s.PayoutSerializer))
     def get(self, request: Request) -> Response:
         return _paginate(
             self, request, Payout.objects.filter(payee=request.user).order_by("-created_at"), s.PayoutSerializer
@@ -146,7 +146,7 @@ class MyPayoutCancelView(APIView):
 class PayoutQueueView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
-    @extend_schema(parameters=[OpenApiParameter("status", str)], responses=s.PayoutSerializer(many=True))
+    @extend_schema(parameters=[OpenApiParameter("status", str)], responses=paginated(s.PayoutSerializer))
     def get(self, request: Request) -> Response:
         authorize(request.user, "payments.payouts.manage")
         qs = Payout.objects.filter(status=request.query_params.get("status") or "requested").order_by("created_at")

@@ -16,7 +16,7 @@ from django.test import override_settings
 
 from tests.helpers import BASE, identifiers, post
 from university.anonymous.identity import open_identity, owner_token
-from university.anonymous.models import AnonymousComment, AnonymousPost, Authorship
+from university.anonymous.models import AnonymousComment, AnonymousMessage, AnonymousPost, Authorship
 from university.audit.models import AuditLog
 from university.core.events import event_bus
 
@@ -165,7 +165,8 @@ def test_ids_are_random_and_timestamps_coarse(auth_client, author):
 def test_other_users_exports_do_not_include_anonymous_content(auth_client, author, reader):
     post(auth_client(author), "secret thoughts")
     export = auth_client(reader).get("/api/v1/me/export/").json()
-    assert export["anonymous"] == {"posts": [], "comments": []}
+    assert export["anonymous"]["posts"] == [] and export["anonymous"]["comments"] == []
+    assert export["anonymous"]["messages_sent"] == []
     assert "secret thoughts" not in str(export)
 
 
@@ -173,3 +174,59 @@ def test_viewer_flags_do_not_leak_across_users(auth_client, author, reader):
     created = post(auth_client(author))
     assert auth_client(reader).get(f"{BASE}/posts/{created['id']}/").json()["viewer"]["is_author"] is False
     assert auth_client(author).get(f"{BASE}/posts/{created['id']}/").json()["viewer"]["is_author"] is True
+
+
+# ------------------------------------------------------------------ anonymous inbox
+def _inbox_message(auth_client, author, recipient, body="Who do you have a crush on?"):
+    auth_client(recipient).patch(f"{BASE}/me/inbox/", {"enabled": True}, format="json")
+    response = auth_client(author).post(f"{BASE}/inboxes/{recipient.handle}/messages/", {"body": body}, format="json")
+    assert response.status_code == 202, response.json()
+    _assert_no_identity(response, author)
+    return AnonymousMessage.objects.get(body=body)
+
+
+def test_inbox_responses_never_contain_the_sender(auth_client, api_client, author, reader, moderator):
+    message = _inbox_message(auth_client, author, reader)
+    owner = auth_client(reader)
+    owner.post(
+        f"{BASE}/me/inbox/messages/{message.pk}/answer/", {"answer": "No comment", "public": True}, format="json"
+    )
+    for client, url in (
+        (owner, f"{BASE}/me/inbox/"),
+        (owner, f"{BASE}/me/inbox/messages/"),
+        (api_client, f"{BASE}/inboxes/{reader.handle}/answers/"),
+        (auth_client(moderator), f"{BASE}/inboxes/{reader.handle}/answers/"),
+        (owner, "/api/v1/notifications/"),
+    ):
+        response = client.get(url)
+        assert response.status_code in (200, 404)
+        _assert_no_identity(response, author)
+
+
+def test_inbox_storage_holds_no_plaintext_link(auth_client, author, reader, outsider):
+    first = _inbox_message(auth_client, author, reader, "one")
+    second = _inbox_message(auth_client, author, outsider, "two")
+    assert not any(f.is_relation and f.related_model is type(author) for f in AnonymousMessage._meta.get_fields())
+    # The per-inbox token can't link one sender across two inboxes.
+    assert first.sender_token != second.sender_token
+    with connection.cursor() as cursor:
+        cursor.execute(f"SELECT * FROM {AnonymousMessage._meta.db_table}")
+        flat = " ".join(str(v) for row in cursor.fetchall() for v in row)
+    for value in identifiers(author):
+        assert value not in flat
+    record = Authorship.objects.get(kind="message", object_id=first.pk)
+    assert open_identity(record.identity_cipher) == str(author.pk)
+
+
+def test_inbox_audit_and_events_never_link_the_sender(auth_client, author, reader):
+    seen = []
+    event_bus.subscribe("*", seen.append)
+    try:
+        _inbox_message(auth_client, author, reader)
+    finally:
+        event_bus.unsubscribe("*", seen.append)
+    for event in [e for e in seen if e.name.startswith("anonymous.")]:
+        assert event.actor_id is None and all(v not in str(event.payload) for v in identifiers(author))
+    assert not AuditLog.objects.filter(
+        actor_ref=str(author.pk), target_type__startswith="university_anonymous"
+    ).exists()

@@ -6,13 +6,20 @@ from collections.abc import Mapping
 from typing import Any
 
 from django.db.models import Q, QuerySet
+from django.utils import timezone
 
 from university.core.exceptions import NotFound
 from university.core.ids import is_valid_uuid
-from university.institution.constants import InstitutionStatus, MembershipStatus
+from university.institution.constants import (
+    AnnouncementAudience,
+    AnnouncementStatus,
+    InstitutionStatus,
+    MembershipStatus,
+)
 from university.institution.models import (
     AcademicSession,
     AcademicUnit,
+    Announcement,
     Campus,
     Institution,
     InstitutionDomain,
@@ -136,3 +143,46 @@ def public_affiliations(user: Any) -> list[dict[str, Any]]:
             user=user, status=MembershipStatus.VERIFIED, institution__status=InstitutionStatus.ACTIVE
         ).select_related("institution")
     ]
+
+
+# ------------------------------------------------------------------ announcements
+def _live(qs: QuerySet[Announcement]) -> QuerySet[Announcement]:
+    now = timezone.now()
+    return qs.filter(status=AnnouncementStatus.PUBLISHED).filter(Q(expires_at__isnull=True) | Q(expires_at__gt=now))
+
+
+def _is_verified_member(user: Any, institution_id: Any) -> bool:
+    return bool(
+        user is not None
+        and getattr(user, "is_authenticated", False)
+        and InstitutionMembership.objects.filter(
+            user=user, institution_id=institution_id, status=MembershipStatus.VERIFIED
+        ).exists()
+    )
+
+
+def visible_announcements(user: Any, institution: Institution) -> QuerySet[Announcement]:
+    """Published, unexpired announcements this person may read (members-only needs a verified membership)."""
+    qs = _live(Announcement.objects.filter(institution=institution)).select_related("institution")
+    if not _is_verified_member(user, institution.pk):
+        qs = qs.filter(audience=AnnouncementAudience.PUBLIC)
+    return qs
+
+
+def can_view_announcement(user: Any, announcement: Announcement) -> bool:
+    authenticated = user is not None and getattr(user, "is_authenticated", False)
+    if authenticated and can_manage(user, announcement.institution, "institution.announcements.publish"):
+        return True
+    if announcement.status != AnnouncementStatus.PUBLISHED:
+        return False
+    if announcement.expires_at and announcement.expires_at <= timezone.now():
+        return False
+    return announcement.audience == AnnouncementAudience.PUBLIC or _is_verified_member(
+        user, announcement.institution_id
+    )
+
+
+def my_announcements(user: Any) -> QuerySet[Announcement]:
+    """Announcements from every institution where this person is a verified member."""
+    ids = InstitutionMembership.objects.filter(user=user, status=MembershipStatus.VERIFIED).values("institution_id")
+    return _live(Announcement.objects.filter(institution_id__in=ids)).select_related("institution")

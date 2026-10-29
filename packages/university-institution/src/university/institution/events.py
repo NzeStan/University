@@ -11,3 +11,9 @@ MEMBERSHIP_SUSPENDED = "institution.membership.suspended"
 MEMBERSHIP_REVOKED = "institution.membership.revoked"
 MEMBERSHIP_LEFT = "institution.membership.left"
 VERIFICATION_STARTED = "institution.verification.started"
+#: {"announcement_id", "institution_id", "priority"}
+ANNOUNCEMENT_PUBLISHED = "institution.announcement.published"
+#: One per targeted verified member: {"announcement_id", "institution_id", "user_id", "priority"}.
+ANNOUNCEMENT_NOTICE = "institution.announcement.notice"
+ANNOUNCEMENT_UPDATED = "institution.announcement.updated"
+ANNOUNCEMENT_ARCHIVED = "institution.announcement.archived"

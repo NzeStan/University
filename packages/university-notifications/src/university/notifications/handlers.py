@@ -4,8 +4,10 @@ Each handler reads ids from an event payload and calls :func:`notify`. The
 publishing modules never import this module; events for modules that aren't
 installed simply never arrive.
 
-By design there are **no notifications for anonymous content**: routing a
+By design there are **no notifications for anonymous authors**: routing a
 reply to an anonymous author would require linking them to their post.
+Recipients of anonymous inbox messages are notified (it's their inbox), with
+no actor and nothing about the sender.
 Moderation events about anonymous content carry no user id and are skipped.
 """
 
@@ -441,6 +443,123 @@ def on_account_closed(event: Event) -> None:
     services.disable_devices(event.payload.get("user_id"), reason="account_closed")
 
 
+def on_anonymous_message(event: Event) -> None:
+    p = event.payload
+    services.notify(
+        recipient=p.get("recipient_id"),
+        verb="anonymous.message_received",
+        target_type="anonymous.message",
+        target_id=p.get("message_id"),
+        group_key=f"anonymous.inbox:{p.get('recipient_id')}",
+    )
+
+
+def on_announcement_notice(event: Event) -> None:
+    p = event.payload
+    urgent = p.get("priority") == "urgent"
+    services.notify(
+        recipient=p.get("user_id"),
+        verb="institution.announcement_urgent" if urgent else "institution.announcement",
+        target_type="institution.announcement",
+        target_id=p.get("announcement_id"),
+        data={"institution_id": p.get("institution_id"), "priority": p.get("priority")},
+    )
+
+
+def on_application_submitted(event: Event) -> None:
+    p = event.payload
+    services.notify(
+        recipient=p.get("poster_id"),
+        verb="opportunities.application",
+        actor=p.get("applicant_id"),
+        target_type="opportunities.opportunity",
+        target_id=p.get("opportunity_id"),
+        data={"application_id": p.get("application_id")},
+    )
+
+
+def on_campaign_reviewed(event: Event) -> None:
+    p = event.payload
+    services.notify(
+        recipient=p.get("advertiser_id"),
+        verb="promotions.approved" if p.get("approved") else "promotions.rejected",
+        target_type="promotions.campaign",
+        target_id=p.get("campaign_id"),
+    )
+
+
+def on_campaign_completed(event: Event) -> None:
+    p = event.payload
+    services.notify(
+        recipient=p.get("advertiser_id"),
+        verb="promotions.completed",
+        target_type="promotions.campaign",
+        target_id=p.get("campaign_id"),
+    )
+
+
+SUBSCRIPTION_VERBS = {
+    "subscriptions.subscription.activated": "subscriptions.activated",
+    "subscriptions.subscription.renewal_due": "subscriptions.renewal_due",
+    "subscriptions.subscription.expired": "subscriptions.expired",
+}
+
+
+def on_subscription_event(event: Event) -> None:
+    p = event.payload
+    services.notify(
+        recipient=p.get("user_id"),
+        verb=SUBSCRIPTION_VERBS[event.name],
+        target_type="subscriptions.subscription",
+        target_id=p.get("subscription_id"),
+        data={"plan": p.get("plan")},
+    )
+
+
+APPLICATION_VERBS = {
+    "shortlisted": "opportunities.shortlisted",
+    "hired": "opportunities.hired",
+    "rejected": "opportunities.rejected",
+}
+
+
+def on_application_status(event: Event) -> None:
+    p = event.payload
+    verb = APPLICATION_VERBS.get(p.get("status"))
+    if verb:
+        services.notify(
+            recipient=p.get("applicant_id"),
+            verb=verb,
+            target_type="opportunities.opportunity",
+            target_id=p.get("opportunity_id"),
+            data={"application_id": p.get("application_id")},
+        )
+
+
+def on_message_sent(event: Event) -> None:
+    """One notification per conversation, refreshed by new messages (never containing their text)."""
+    p = event.payload
+    for recipient in p.get("recipient_ids") or []:
+        services.notify(
+            recipient=recipient,
+            verb="messaging.message",
+            actor=p.get("sender_id"),
+            data={"conversation_id": p.get("conversation_id")},
+            group_key=f"messaging.conversation:{p.get('conversation_id')}",
+        )
+
+
+def on_message_request(event: Event) -> None:
+    p = event.payload
+    services.notify(
+        recipient=p.get("recipient_id"),
+        verb="messaging.request",
+        actor=p.get("sender_id"),
+        data={"conversation_id": p.get("conversation_id")},
+        group_key=f"messaging.request:{p.get('conversation_id')}",
+    )
+
+
 HANDLERS: dict[str, Callable[[Event], None]] = {
     "social.mention.created": on_mention,
     "social.comment.created": on_comment,
@@ -504,6 +623,15 @@ HANDLERS: dict[str, Callable[[Event], None]] = {
     "security.api_key.created": _security("security.api_key_created"),
     "user.deleted": on_account_closed,
     "user.banned": on_account_closed,
+    "anonymous.message.received": on_anonymous_message,
+    "institution.announcement.notice": on_announcement_notice,
+    "opportunities.application.submitted": on_application_submitted,
+    "opportunities.application.status_changed": on_application_status,
+    "messaging.message.sent": on_message_sent,
+    "messaging.request.received": on_message_request,
+    "promotions.campaign.reviewed": on_campaign_reviewed,
+    "promotions.campaign.completed": on_campaign_completed,
+    **dict.fromkeys(SUBSCRIPTION_VERBS, on_subscription_event),
 }
 
 

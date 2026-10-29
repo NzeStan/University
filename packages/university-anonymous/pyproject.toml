@@ -28,7 +28,7 @@ classifiers = [
     "Typing :: Typed",
 ]
 # Level-two modules depend only on Core (same minor series).
-dependencies = ["university-core>=0.1,<0.2", "university-moderation>=0.1,<0.2", "cryptography>=42"]
+dependencies = ["university-core>=0.1.1,<0.2", "university-moderation>=0.1,<0.2", "cryptography>=42"]
 
 [project.optional-dependencies]
 test = ["pytest>=8", "pytest-django>=4.8", "pytest-cov>=5", "drf-spectacular>=0.27"]

@@ -11,7 +11,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from university.core.api.pagination import PageNumberPagination
-from university.core.api.schema import OpenApiParameter, OpenApiTypes, extend_schema
+from university.core.api.schema import OpenApiParameter, OpenApiTypes, extend_schema, paginated
 from university.core.context import get_request_context
 from university.core.exceptions import AuthenticationFailed, NotFound, ValidationError
 from university.core.media import require_media_library
@@ -68,7 +68,7 @@ class PodcastListCreateView(APIView):
 
     @extend_schema(
         parameters=[OpenApiParameter(p, str) for p in ("q", "category", "language", "scope_type", "scope_id")],
-        responses=s.PodcastShowSerializer(many=True),
+        responses=paginated(s.PodcastShowSerializer),
     )
     def get(self, request: Request) -> Response:
         return _paginate(
@@ -229,7 +229,7 @@ class PodcastSeasonsView(APIView):
 class PodcastEpisodesView(APIView):
     permission_classes = [permissions.AllowAny]
 
-    @extend_schema(responses=s.PodcastEpisodeSerializer(many=True))
+    @extend_schema(responses=paginated(s.PodcastEpisodeSerializer))
     def get(self, request: Request, podcast_id: Any) -> Response:
         podcast = selectors.get_visible_podcast(request.user, podcast_id)
         if selectors.can_manage(request.user, podcast):
@@ -277,7 +277,7 @@ class PodcastAnalyticsView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     @extend_schema(
-        parameters=[OpenApiParameter("from", str), OpenApiParameter("to", str)], responses=OpenApiTypes.OBJECT
+        parameters=[OpenApiParameter("from", str), OpenApiParameter("to", str)], responses=s.PodcastAnalyticsSerializer
     )
     def get(self, request: Request, podcast_id: Any) -> Response:
         try:
@@ -520,7 +520,7 @@ class ClipStreamView(APIView):
 class MySubscriptionsView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
-    @extend_schema(responses=s.PodcastShowSerializer(many=True))
+    @extend_schema(responses=paginated(s.PodcastShowSerializer))
     def get(self, request: Request) -> Response:
         qs = Podcast.objects.filter(subscriptions__user=request.user, hidden_at__isnull=True).order_by("title")
         return _paginate(self, request, qs, s.PodcastShowSerializer, _show_context)
@@ -529,7 +529,7 @@ class MySubscriptionsView(APIView):
 class MyPodcastsView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
-    @extend_schema(responses=s.PodcastShowSerializer(many=True))
+    @extend_schema(responses=paginated(s.PodcastShowSerializer))
     def get(self, request: Request) -> Response:
         qs = Podcast.objects.filter(members__user=request.user).order_by("-created_at")
         return _paginate(self, request, qs, s.PodcastShowSerializer, _show_context)

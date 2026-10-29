@@ -10,12 +10,14 @@ from university.notifications.constants import Platform
 from university.notifications.models import Notification, PushDevice
 from university.notifications.rendering import actor_name, open_url, render_title, target_available
 from university.notifications.verbs import get_verb
+from university.users.refs import person_ref
 
 
 class NotificationActorSerializer(serializers.Serializer):
     id = serializers.UUIDField()
     handle = serializers.CharField(allow_null=True)
     display_name = serializers.CharField()
+    avatar_url = serializers.CharField(allow_null=True)
 
 
 class NotificationTargetSerializer(serializers.Serializer):
@@ -69,7 +71,7 @@ class NotificationSerializer(StrictModelSerializer):
     def _actor_data(user: Any) -> dict[str, Any] | None:
         if user is None or not user.is_active or getattr(user, "anonymized_at", None):
             return None
-        return {"id": user.pk, "handle": user.handle, "display_name": actor_name(user)}
+        return {**person_ref(user), "display_name": actor_name(user)}
 
     @extend_schema_field(NotificationActorSerializer(allow_null=True))
     def get_actor(self, obj: Notification) -> dict[str, Any] | None:

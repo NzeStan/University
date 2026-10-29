@@ -9,7 +9,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from university.core.api.pagination import PageNumberPagination
-from university.core.api.schema import OpenApiParameter, OpenApiTypes, extend_schema
+from university.core.api.schema import OpenApiParameter, OpenApiTypes, extend_schema, paginated
 from university.core.context import get_request_context
 from university.core.crypto import constant_time_equals
 from university.core.exceptions import AuthenticationFailed, NotFound, ValidationError
@@ -83,7 +83,7 @@ class CreatorListView(APIView):
             OpenApiParameter(p, str)
             for p in ("q", "category", "country", "verified", "open_to_sponsorships", "min_reach")
         ],
-        responses=s.CreatorProfileSerializer(many=True),
+        responses=paginated(s.CreatorProfileSerializer),
     )
     def get(self, request: Request) -> Response:
         paginator = PageNumberPagination()
@@ -278,7 +278,7 @@ class VerificationQueueView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     @extend_schema(
-        parameters=[OpenApiParameter("status", str)], responses=s.CreatorVerificationRequestSerializer(many=True)
+        parameters=[OpenApiParameter("status", str)], responses=paginated(s.CreatorVerificationRequestSerializer)
     )
     def get(self, request: Request) -> Response:
         authorize(request.user, "creator.verify")
@@ -304,7 +304,7 @@ class VerificationDecisionView(APIView):
 class AccountReviewQueueView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
-    @extend_schema(responses=s.CreatorOwnLinkedAccountSerializer(many=True))
+    @extend_schema(responses=paginated(s.CreatorOwnLinkedAccountSerializer))
     def get(self, request: Request) -> Response:
         authorize(request.user, "creator.verify")
         qs = LinkedAccount.objects.filter(ownership=OwnershipStatus.PENDING_REVIEW).order_by("created_at")
@@ -356,7 +356,7 @@ class CampaignListCreateView(APIView):
 
     @extend_schema(
         parameters=[OpenApiParameter("q", str), OpenApiParameter("category", str)],
-        responses=s.CreatorCampaignSerializer(many=True),
+        responses=paginated(s.CreatorCampaignSerializer),
     )
     def get(self, request: Request) -> Response:
         paginator = PageNumberPagination()
@@ -434,7 +434,7 @@ def campaign_action(name: str) -> type[APIView]:
 class CampaignParticipationsView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
-    @extend_schema(parameters=[OpenApiParameter("status", str)], responses=s.CreatorParticipationSerializer(many=True))
+    @extend_schema(parameters=[OpenApiParameter("status", str)], responses=paginated(s.CreatorParticipationSerializer))
     def get(self, request: Request, campaign_id: Any) -> Response:
         campaign = selectors.get_visible_campaign(request.user, campaign_id)
         if not selectors.can_manage_campaign(request.user, campaign):
@@ -551,7 +551,7 @@ class DeliverableReviewView(APIView):
 class MyParticipationsView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
-    @extend_schema(responses=s.CreatorParticipationSerializer(many=True))
+    @extend_schema(responses=paginated(s.CreatorParticipationSerializer))
     def get(self, request: Request) -> Response:
         qs = selectors.my_participations(request.user).select_related("profile__user")
         return _paginate(self, request, qs, s.CreatorParticipationSerializer)
@@ -560,7 +560,7 @@ class MyParticipationsView(APIView):
 class MyCampaignsView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
-    @extend_schema(responses=s.CreatorCampaignSerializer(many=True))
+    @extend_schema(responses=paginated(s.CreatorCampaignSerializer))
     def get(self, request: Request) -> Response:
         paginator = PageNumberPagination()
         page = paginator.paginate_queryset(selectors.managed_campaigns(request.user), request, view=self)

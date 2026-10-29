@@ -11,5 +11,10 @@ globals().update(
             "tests.audience",
         ],
         root_urlconf="tests.urls",
+        STORAGES={
+            "default": {"BACKEND": "django.core.files.storage.InMemoryStorage"},
+            "private": {"BACKEND": "django.core.files.storage.InMemoryStorage"},
+            "staticfiles": {"BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage"},
+        },
     )
 )

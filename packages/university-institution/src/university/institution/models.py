@@ -31,6 +31,9 @@ from university.core.uploads import uuid_upload_to
 from university.institution.constants import (
     OPEN_MEMBERSHIP_STATUSES,
     OPEN_VERIFICATION_STATUSES,
+    AnnouncementAudience,
+    AnnouncementPriority,
+    AnnouncementStatus,
     InstitutionStatus,
     MembershipStatus,
     VerificationStatus,
@@ -426,3 +429,43 @@ class VerificationRequest(BaseModel):
 
     def __str__(self) -> str:
         return f"{self.method} ({self.status})"
+
+
+class Announcement(BaseModel):
+    """An official notice from an institution.
+
+    It is *verified* when the institution itself is verified: only people holding
+    ``institution.announcements.publish`` for that institution can publish one, so it can always
+    be told apart from ordinary posts.
+    """
+
+    institution = models.ForeignKey(Institution, on_delete=models.CASCADE, related_name="announcements")
+    title = models.CharField(max_length=200)
+    body = models.TextField(max_length=10000)
+    category = models.CharField(max_length=32, default="general")
+    audience = models.CharField(
+        max_length=16, choices=AnnouncementAudience.choices, default=AnnouncementAudience.MEMBERS
+    )
+    campus = models.ForeignKey(Campus, null=True, blank=True, on_delete=models.SET_NULL, related_name="+")
+    academic_unit = models.ForeignKey(AcademicUnit, null=True, blank=True, on_delete=models.SET_NULL, related_name="+")
+    priority = models.CharField(
+        max_length=16, choices=AnnouncementPriority.choices, default=AnnouncementPriority.NORMAL
+    )
+    pinned = models.BooleanField(default=False)
+    status = models.CharField(max_length=16, choices=AnnouncementStatus.choices, default=AnnouncementStatus.DRAFT)
+    published_at = models.DateTimeField(null=True, blank=True)
+    expires_at = models.DateTimeField(null=True, blank=True)
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL, related_name="+"
+    )
+    published_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL, related_name="+"
+    )
+
+    class Meta:
+        verbose_name = _("announcement")
+        ordering = ["-pinned", "-published_at", "-created_at"]
+        indexes = [models.Index(fields=["institution", "status", "-published_at"], name="univ_inst_announce_idx")]
+
+    def __str__(self) -> str:
+        return self.title

@@ -37,9 +37,9 @@ class InstitutionConfig(UniversityAppConfig):
 
     def get_content_adapters(self) -> list[Any]:
         # Display only: institutions are not moderatable (see content.py).
-        from university.institution.content import InstitutionAdapter
+        from university.institution.content import AnnouncementAdapter, InstitutionAdapter
 
-        return [InstitutionAdapter()]
+        return [InstitutionAdapter(), AnnouncementAdapter()]
 
     def get_scope_types(self) -> Iterable[ScopeTypeDef]:
         return [
@@ -59,6 +59,11 @@ class InstitutionConfig(UniversityAppConfig):
                 "institution.memberships.verify", "Approve or reject memberships.", scopes=both, sensitive=True
             ),
             PermissionDef("institution.memberships.manage", "Suspend or revoke memberships.", scopes=both),
+            PermissionDef(
+                "institution.announcements.publish",
+                "Write and publish official announcements for an institution.",
+                scopes=both,
+            ),
         ]
 
     def get_roles(self) -> Iterable[RoleDef]:
@@ -72,10 +77,18 @@ class InstitutionConfig(UniversityAppConfig):
                     "institution.structure.manage",
                     "institution.domains.manage",
                     "institution.memberships.*",
+                    "institution.announcements.*",
                     "permissions.roles.view",
                     "permissions.roles.assign",
                 ),
                 description="Administers one institution and its members.",
+            ),
+            RoleDef(
+                key="institution_communications",
+                name="Communications officer",
+                scope_type=INSTITUTION_SCOPE,
+                permissions=("institution.announcements.publish",),
+                description="Publishes official announcements for one institution.",
             ),
             RoleDef(
                 key="institution_verifier",

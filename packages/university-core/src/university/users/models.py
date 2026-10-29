@@ -35,6 +35,7 @@ from django.utils.translation import gettext_lazy as _
 
 from university.core.ids import new_uuid
 from university.core.models import BaseModel
+from university.core.uploads import uuid_upload_to
 from university.users.constants import (
     DigestFrequency,
     MFAChannel,
@@ -68,6 +69,8 @@ class AbstractUniversityUser(AbstractBaseUser, PermissionsMixin):
         help_text=_("Optional public username."),
     )
     display_name = models.CharField(_("display name"), max_length=100, blank=True)
+    #: Profile photo: always a re-encoded, metadata-free square WebP (see services/avatars.py).
+    avatar = models.FileField(_("profile photo"), upload_to=uuid_upload_to("avatars"), max_length=255, blank=True)
     phone_number = models.CharField(
         _("phone number"), max_length=16, null=True, blank=True, validators=[validate_phone]
     )

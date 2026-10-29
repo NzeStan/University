@@ -145,6 +145,8 @@ def purge_user(user: Any) -> Any:
     user.pending_email = ""
     user.handle = None
     user.display_name = ""
+    if user.avatar:
+        user.avatar.delete(save=False)
     user.phone_number = None
     user.phone_verified_at = None
     user.email_verified_at = None

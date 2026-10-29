@@ -18,7 +18,7 @@ from university.permissions.services import assign_role
 
 pytestmark = pytest.mark.django_db
 BASE = "/api/v1/marketplace"
-PNG = b"\x89PNG\r\n\x1a\n" + b"\x00" * 64
+PNG = b"\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01\x08\x02\x00\x00\x00\x90wS\xde\x00\x00\x00\x0cIDATx\xdac\xc8\xd5\xb8\t\x00\x02t\x01o\xfbJ\xd2\xe1\x00\x00\x00\x00IEND\xaeB`\x82"  # A real 1x1 PNG: decodes with or without Pillow.
 INST = "11111111-1111-4111-8111-111111111111"
 
 

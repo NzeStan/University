@@ -14,15 +14,21 @@ from rest_framework import serializers
 
 from university.core.api.serializers import StrictModelSerializer
 from university.social.conf import social_settings
-from university.social.constants import Visibility
+from university.social.constants import ContentStatus, Visibility
 from university.social.models import Comment, Follow, PostMedia, SocialProfile
+from university.users.services.avatars import avatar_url
 
 
 class UserSummarySerializer(StrictModelSerializer):
+    avatar_url = serializers.SerializerMethodField()
+
     class Meta:
         model = get_user_model()
-        fields = ("id", "handle", "display_name")
+        fields = ("id", "handle", "display_name", "avatar_url")
         read_only_fields = fields
+
+    def get_avatar_url(self, obj: Any) -> str | None:
+        return avatar_url(obj)
 
 
 class MediaSerializer(StrictModelSerializer):
@@ -67,8 +73,82 @@ def poll_representation(post: Any, context: dict[str, Any]) -> dict[str, Any] | 
     }
 
 
+class SocialAudienceSerializer(serializers.Serializer):
+    type = serializers.CharField()
+    id = serializers.CharField()
+
+
+class SocialMentionSerializer(serializers.Serializer):
+    id = serializers.UUIDField()
+    handle = serializers.CharField(allow_null=True)
+
+
+class SocialPollOptionSerializer(serializers.Serializer):
+    id = serializers.UUIDField()
+    text = serializers.CharField()
+    vote_count = serializers.IntegerField()
+    voted = serializers.BooleanField()
+
+
+class SocialPollSerializer(serializers.Serializer):
+    id = serializers.UUIDField()
+    allows_multiple = serializers.BooleanField()
+    closes_at = serializers.DateTimeField(allow_null=True)
+    closed = serializers.BooleanField()
+    total_votes = serializers.IntegerField()
+    options = SocialPollOptionSerializer(many=True)
+
+
+class SocialRepostOfSerializer(serializers.Serializer):
+    """The original of a repost: just its id and ``unavailable: true`` when the viewer can't see it."""
+
+    id = serializers.UUIDField()
+    unavailable = serializers.BooleanField()
+    author = UserSummarySerializer(required=False)
+    body = serializers.CharField(required=False)
+    created_at = serializers.DateTimeField(required=False)
+
+
+class SocialPostCountsSerializer(serializers.Serializer):
+    reactions = serializers.IntegerField()
+    comments = serializers.IntegerField()
+    reposts = serializers.IntegerField()
+
+
+class SocialPostViewerSerializer(serializers.Serializer):
+    reaction = serializers.CharField(allow_null=True)
+    bookmarked = serializers.BooleanField()
+    reposted = serializers.BooleanField()
+    is_author = serializers.BooleanField()
+
+
 class PostSerializer(serializers.Serializer):
-    """Read representation of a post (built from selector-annotated querysets)."""
+    """Read representation of a post (built from selector-annotated querysets).
+
+    The declared fields document the shape for the API schema; ``to_representation`` builds it.
+    ``status`` and ``moderation_reason`` appear only for the author.
+    """
+
+    id = serializers.UUIDField(read_only=True)
+    author = UserSummarySerializer(read_only=True)
+    body = serializers.CharField(read_only=True)
+    visibility = serializers.ChoiceField(choices=Visibility.choices, read_only=True)
+    audience = SocialAudienceSerializer(read_only=True, allow_null=True)
+    hashtags = serializers.ListField(child=serializers.CharField(), read_only=True)
+    mentions = SocialMentionSerializer(many=True, read_only=True)
+    links = serializers.ListField(child=serializers.CharField(), read_only=True)
+    media = MediaSerializer(many=True, read_only=True)
+    poll = SocialPollSerializer(read_only=True, allow_null=True)
+    repost_of = SocialRepostOfSerializer(read_only=True, allow_null=True)
+    is_repost = serializers.BooleanField(read_only=True)
+    location = serializers.CharField(read_only=True, allow_null=True)
+    comments_enabled = serializers.BooleanField(read_only=True)
+    counts = SocialPostCountsSerializer(read_only=True)
+    viewer = SocialPostViewerSerializer(read_only=True)
+    created_at = serializers.DateTimeField(read_only=True)
+    edited_at = serializers.DateTimeField(read_only=True, allow_null=True)
+    status = serializers.ChoiceField(choices=ContentStatus.choices, required=False, help_text="Only for the author.")
+    moderation_reason = serializers.CharField(allow_null=True, required=False, help_text="Only for the author.")
 
     def to_representation(self, post: Any) -> dict[str, Any]:
         viewer = _viewer(self.context)
@@ -163,7 +243,7 @@ class PollVoteSerializer(serializers.Serializer):
 class CommentSerializer(StrictModelSerializer):
     author = UserSummarySerializer(read_only=True)
     post = serializers.UUIDField(source="post_id", read_only=True)
-    parent = serializers.UUIDField(source="parent_id", read_only=True)
+    parent = serializers.UUIDField(source="parent_id", read_only=True, allow_null=True)
     viewer_reaction = serializers.SerializerMethodField()
 
     class Meta:
@@ -230,3 +310,18 @@ class ModerationSerializer(serializers.Serializer):
 
 class FollowResultSerializer(serializers.Serializer):
     status = serializers.CharField()
+
+
+class HashtagSerializer(serializers.Serializer):
+    name = serializers.CharField()
+    posts_count = serializers.IntegerField()
+
+
+class SocialFeedPageSerializer(serializers.Serializer):
+    """A page of a feed: cursor feeds send ``next``/``previous``; ranked feeds send ``offset``/``limit``."""
+
+    next = serializers.URLField(allow_null=True, required=False)
+    previous = serializers.URLField(allow_null=True, required=False)
+    offset = serializers.IntegerField(required=False)
+    limit = serializers.IntegerField(required=False)
+    results = PostSerializer(many=True)

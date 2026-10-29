@@ -135,6 +135,47 @@ _system("moderation.warn", "moderation", _("You received a warning from the mode
 _system("moderation.hide", "moderation", _("Some of your content was hidden by the moderators."))
 _system("moderation.remove", "moderation", _("Some of your content was removed by the moderators."))
 _system("moderation.restore", "moderation", _("Your content was restored."))
+# Inbox messages are anonymous: the notification never names (or hints at) the sender.
+_system("anonymous.message_received", "inbox", _("You have a new anonymous message."))
+_system(
+    "institution.announcement",
+    "announcements",
+    _("New announcement: {target}"),
+    target_fallback=_("from your institution"),
+)
+register_verb(Verb("opportunities.application", "opportunities", _("{actor} applied to {target}")))
+register_verb(Verb("messaging.message", "messages", _("{actor} sent you a message")))
+register_verb(Verb("messaging.request", "messages", _("{actor} wants to send you a message")))
+_system(
+    "opportunities.shortlisted",
+    "opportunities",
+    _("You were shortlisted for {target}"),
+    target_fallback=_("an opportunity"),
+)
+_system(
+    "opportunities.hired",
+    "opportunities",
+    _("Good news: you were selected for {target}"),
+    target_fallback=_("an opportunity"),
+)
+_system(
+    "opportunities.rejected",
+    "opportunities",
+    _("An update on your application for {target}"),
+    target_fallback=_("an opportunity"),
+)
+_system(
+    "institution.announcement_urgent",
+    "urgent_announcements",
+    _("Urgent announcement: {target}"),
+    target_fallback=_("from your institution"),
+)
+_system("promotions.approved", "promotions", _("Your campaign was approved and is running."))
+_system("promotions.rejected", "promotions", _("Your campaign wasn't approved."))
+_system("promotions.completed", "promotions", _("Your campaign has finished."))
+_system("subscriptions.activated", "commerce", _("Your premium plan is active. Enjoy!"))
+_system("subscriptions.renewal_due", "commerce", _("Your premium plan ends soon. Renew to keep it."))
+_system("subscriptions.expired", "commerce", _("Your premium plan has ended."))
 _system("moderation.restrict", "moderation", _("Your account was restricted by the moderators."))
 _system("moderation.suspend", "moderation", _("Your account was suspended by the moderators."))
 _system("moderation.ban", "moderation", _("Your account was banned by the moderators."))

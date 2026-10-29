@@ -12,7 +12,7 @@ from rest_framework.views import APIView
 
 from university.audit.services import record as audit
 from university.core.api.pagination import PageNumberPagination
-from university.core.api.schema import OpenApiParameter, OpenApiTypes, extend_schema
+from university.core.api.schema import OpenApiParameter, OpenApiTypes, extend_schema, extend_schema_view, paginated
 from university.core.exceptions import NotFound, ValidationError
 from university.core.ids import is_valid_uuid
 from university.institution import selectors, services
@@ -20,6 +20,7 @@ from university.institution.api.v1 import serializers as s
 from university.institution.models import (
     AcademicSession,
     AcademicUnit,
+    Announcement,
     Campus,
     Institution,
     InstitutionMembership,
@@ -28,6 +29,7 @@ from university.institution.models import (
     Programme,
     VerificationRequest,
 )
+from university.institution.services import announcements
 from university.institution.services.common import institution_scope
 from university.permissions.drf import require_permission
 from university.permissions.services import authorize
@@ -215,7 +217,10 @@ class StructureListCreateView(InstitutionMixin, APIView):
 def structure_view(kind: str, serializer: type) -> type[StructureListCreateView]:
     attrs = {"kind": kind, "serializer_class": serializer}
     view = type(f"{kind.title()}ListCreateView", (StructureListCreateView,), attrs)
-    return extend_schema(request=serializer, responses=serializer)(view)
+    return extend_schema_view(
+        get=extend_schema(responses=serializer(many=True)),
+        post=extend_schema(request=serializer, responses={201: serializer}),
+    )(view)
 
 
 STRUCTURE_MODELS: dict[str, tuple[type[models.Model], type]] = {
@@ -451,3 +456,120 @@ class VerificationDocumentView(InstitutionMixin, APIView):
         response["X-Content-Type-Options"] = "nosniff"
         response["Cache-Control"] = "no-store"
         return response
+
+
+# ------------------------------------------------------------------ announcements
+class AnnouncementListCreateView(InstitutionMixin, APIView):
+    permission_classes = [permissions.AllowAny]
+
+    @extend_schema(
+        parameters=[OpenApiParameter("status", str, description="Managers only: draft, archived or all.")],
+        responses=paginated(s.InstitutionAnnouncementSerializer),
+    )
+    def get(self, request: Request, institution_id: Any) -> Response:
+        institution = self.get_institution()
+        wanted = request.query_params.get("status")
+        if (
+            wanted
+            and request.user.is_authenticated
+            and selectors.can_manage(request.user, institution, announcements.PUBLISH)
+        ):
+            qs = Announcement.objects.filter(institution=institution).select_related("institution")
+            if wanted != "all":
+                qs = qs.filter(status=wanted)
+        else:
+            qs = selectors.visible_announcements(request.user, institution)
+        paginator = PageNumberPagination()
+        page = paginator.paginate_queryset(qs, request, view=self)
+        return paginator.get_paginated_response(s.InstitutionAnnouncementSerializer(page, many=True).data)
+
+    @extend_schema(
+        request=s.InstitutionAnnouncementWriteSerializer, responses={201: s.InstitutionAnnouncementSerializer}
+    )
+    def post(self, request: Request, institution_id: Any) -> Response:
+        if not request.user.is_authenticated:
+            raise NotFound()
+        institution = self.get_institution()
+        serializer = s.InstitutionAnnouncementWriteSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = dict(serializer.validated_data)
+        publish_now = data.pop("publish", False)
+        announcement = announcements.create_announcement(
+            actor=request.user,
+            institution=institution,
+            data=resolve_references(institution, data),
+            publish_now=publish_now,
+        )
+        return Response(s.InstitutionAnnouncementSerializer(announcement).data, status=status.HTTP_201_CREATED)
+
+
+class AnnouncementDetailView(InstitutionMixin, APIView):
+    permission_classes = [permissions.AllowAny]
+
+    def _get(self, request: Request, announcement_id: Any) -> Announcement:
+        announcement = (
+            Announcement.objects.filter(pk=announcement_id, institution=self.get_institution())
+            .select_related("institution")
+            .first()
+        )
+        if announcement is None or not selectors.can_view_announcement(request.user, announcement):
+            raise NotFound()
+        return announcement
+
+    @extend_schema(responses=s.InstitutionAnnouncementSerializer)
+    def get(self, request: Request, institution_id: Any, announcement_id: Any) -> Response:
+        return Response(s.InstitutionAnnouncementSerializer(self._get(request, announcement_id)).data)
+
+    @extend_schema(request=s.InstitutionAnnouncementWriteSerializer, responses=s.InstitutionAnnouncementSerializer)
+    def patch(self, request: Request, institution_id: Any, announcement_id: Any) -> Response:
+        if not request.user.is_authenticated:
+            raise NotFound()
+        announcement = self._get(request, announcement_id)
+        serializer = s.InstitutionAnnouncementWriteSerializer(data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        data = dict(serializer.validated_data)
+        data.pop("publish", None)
+        updated = announcements.update_announcement(
+            actor=request.user, announcement=announcement, data=resolve_references(announcement.institution, data)
+        )
+        return Response(s.InstitutionAnnouncementSerializer(updated).data)
+
+    @extend_schema(responses={204: None})
+    def delete(self, request: Request, institution_id: Any, announcement_id: Any) -> Response:
+        if not request.user.is_authenticated:
+            raise NotFound()
+        announcements.delete_announcement(actor=request.user, announcement=self._get(request, announcement_id))
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class _AnnouncementActionView(InstitutionMixin, APIView):
+    permission_classes = [permissions.IsAuthenticated]
+    operation: Any = None
+
+    @extend_schema(request=None, responses=s.InstitutionAnnouncementSerializer)
+    def post(self, request: Request, institution_id: Any, announcement_id: Any) -> Response:
+        announcement = Announcement.objects.filter(pk=announcement_id, institution=self.get_institution()).first()
+        if announcement is None:
+            raise NotFound()
+        updated = type(self).operation(actor=request.user, announcement=announcement)
+        return Response(s.InstitutionAnnouncementSerializer(updated).data)
+
+
+class AnnouncementPublishView(_AnnouncementActionView):
+    operation = staticmethod(announcements.publish_announcement)
+
+
+class AnnouncementArchiveView(_AnnouncementActionView):
+    operation = staticmethod(announcements.archive_announcement)
+
+
+class MyAnnouncementsView(APIView):
+    """Announcements from every institution where you're a verified member."""
+
+    permission_classes = [permissions.IsAuthenticated]
+
+    @extend_schema(responses=paginated(s.InstitutionAnnouncementSerializer))
+    def get(self, request: Request) -> Response:
+        paginator = PageNumberPagination()
+        page = paginator.paginate_queryset(selectors.my_announcements(request.user), request, view=self)
+        return paginator.get_paginated_response(s.InstitutionAnnouncementSerializer(page, many=True).data)

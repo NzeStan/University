@@ -8,18 +8,20 @@ from university.core.api.schema import extend_schema_field
 from university.core.api.serializers import StrictModelSerializer
 from university.marketplace.constants import Condition, DisputeOutcome, Fulfilment, ListingVisibility, PaymentMethod
 from university.marketplace.models import Listing, ListingImage, MarketCategory, Order, Review, SellerProfile
+from university.users.refs import person_ref
 
 
 class MarketPersonSerializer(serializers.Serializer):
     id = serializers.UUIDField()
     handle = serializers.CharField(allow_null=True)
     display_name = serializers.CharField()
+    avatar_url = serializers.CharField(allow_null=True)
 
 
 def person(user: Any) -> dict[str, Any] | None:
     if user is None or not user.is_active:
         return None
-    return {"id": user.pk, "handle": user.handle, "display_name": user.display_name or user.handle or ""}
+    return person_ref(user)
 
 
 def _url(context: dict[str, Any], field: Any) -> str:
@@ -29,7 +31,7 @@ def _url(context: dict[str, Any], field: Any) -> str:
 
 
 class MarketCategorySerializer(StrictModelSerializer):
-    parent = serializers.SlugRelatedField(slug_field="key", read_only=True)
+    parent = serializers.SlugRelatedField(slug_field="key", read_only=True, allow_null=True)
 
     class Meta:
         model = MarketCategory

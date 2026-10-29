@@ -16,6 +16,7 @@ urlpatterns = [
     path("auth/password/reset/confirm/", views.PasswordResetConfirmView.as_view(), name="password-reset-confirm"),
     # The authenticated user
     path("me/", views.MeView.as_view(), name="me"),
+    path("me/avatar/", views.AvatarView.as_view(), name="avatar"),
     path("me/password/", views.PasswordChangeView.as_view(), name="password-change"),
     path("me/email/", views.EmailChangeView.as_view(), name="email-change"),
     path("me/phone/", views.PhoneView.as_view(), name="phone"),

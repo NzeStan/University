@@ -5,6 +5,10 @@
 -e ../packages/university-moderation
 -e ../packages/university-anonymous
 -e ../packages/university-community
+-e ../packages/university-opportunities
+-e ../packages/university-messaging
+-e ../packages/university-promotions
+-e ../packages/university-subscriptions
 -e ../packages/university-notifications
 -e ../packages/university-events
 -e ../packages/university-payments

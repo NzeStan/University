@@ -12,6 +12,11 @@ DEFAULTS: dict[str, Any] = {
     "ALLOWED_VISIBILITIES": ["institution", "campus", "community"],
     "POST_MAX_LENGTH": 3000,
     "COMMENT_MAX_LENGTH": 1000,
+    # Anonymous inboxes ("send me anonymous questions").
+    "INBOX_ENABLED": True,
+    "MESSAGE_MAX_LENGTH": 1000,
+    "ANSWER_MAX_LENGTH": 2000,
+    "INBOX_DEFAULT_PROMPT": "Send me an anonymous message!",
     # Abuse gates for posting.
     "MIN_ACCOUNT_AGE_HOURS": 24,
     "REQUIRE_VERIFIED_EMAIL": True,

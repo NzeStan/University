@@ -35,6 +35,16 @@ DEFAULTS: dict[str, Any] = {
             "remove": ["events.event.hidden", "events.event.cancelled"],
             "id_key": "event_id",
         },
+        "institution.announcement": {
+            "index": ["institution.announcement.published", "institution.announcement.updated"],
+            "remove": ["institution.announcement.archived"],
+            "id_key": "announcement_id",
+        },
+        "opportunities.opportunity": {
+            "index": ["opportunities.opportunity.published", "opportunities.opportunity.updated"],
+            "remove": ["opportunities.opportunity.closed", "opportunities.opportunity.hidden"],
+            "id_key": "opportunity_id",
+        },
         "marketplace.listing": {
             "index": ["marketplace.listing.published"],
             "remove": ["marketplace.listing.hidden"],

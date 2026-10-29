@@ -12,4 +12,4 @@ module turns them into notifications without any of them importing it.
 Project code can notify directly with :func:`university.notifications.services.notify`.
 """
 
-__version__ = "0.1.0"
+__version__ = "0.1.1"

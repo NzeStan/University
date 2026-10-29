@@ -11,6 +11,7 @@ from university.core.api.serializers import StrictModelSerializer
 from university.core.conf import university_settings
 from university.users.models import NotificationSettings, PrivacySettings, SecuritySettings
 from university.users.selectors import public_profile_extras
+from university.users.services.avatars import avatar_url
 from university.users.services.preferences import get_privacy_settings
 
 
@@ -73,6 +74,7 @@ class MeSerializer(StrictModelSerializer):
 
     email_verified = serializers.BooleanField(read_only=True)
     phone_verified = serializers.BooleanField(read_only=True)
+    avatar_url = serializers.SerializerMethodField()
 
     class Meta:
         model = get_user_model()
@@ -82,6 +84,7 @@ class MeSerializer(StrictModelSerializer):
             "pending_email",
             "handle",
             "display_name",
+            "avatar_url",
             "phone_number",
             "email_verified",
             "phone_verified",
@@ -95,6 +98,7 @@ class MeSerializer(StrictModelSerializer):
             "id",
             "email",
             "pending_email",
+            "avatar_url",
             "phone_number",
             "email_verified",
             "phone_verified",
@@ -104,17 +108,21 @@ class MeSerializer(StrictModelSerializer):
         )
         extra_kwargs = {"handle": {"validators": []}}
 
+    def get_avatar_url(self, obj: Any) -> str | None:
+        return avatar_url(obj)
+
 
 class PublicProfileSerializer(StrictModelSerializer):
     """What other people may see. Contact details only when the owner allows."""
 
     email = serializers.SerializerMethodField()
     phone_number = serializers.SerializerMethodField()
+    avatar_url = serializers.SerializerMethodField()
     extras = serializers.SerializerMethodField()
 
     class Meta:
         model = get_user_model()
-        fields = ("id", "handle", "display_name", "created_at", "email", "phone_number", "extras")
+        fields = ("id", "handle", "display_name", "avatar_url", "created_at", "email", "phone_number", "extras")
         read_only_fields = fields
 
     def _privacy(self, obj: Any) -> PrivacySettings:
@@ -125,6 +133,9 @@ class PublicProfileSerializer(StrictModelSerializer):
 
     def get_phone_number(self, obj: Any) -> str | None:
         return obj.phone_number if obj.phone_verified and self._privacy(obj).show_phone else None
+
+    def get_avatar_url(self, obj: Any) -> str | None:
+        return avatar_url(obj)
 
     def get_extras(self, obj: Any) -> dict[str, Any]:
         return public_profile_extras(obj, self.context.get("viewer"))
@@ -197,3 +208,14 @@ class ConsentSerializer(serializers.Serializer):
 class StatusChangeSerializer(serializers.Serializer):
     reason = serializers.CharField(max_length=255)
     until = serializers.DateTimeField(required=False, allow_null=True)
+
+
+class AvatarUploadSerializer(serializers.Serializer):
+    file = serializers.FileField(help_text="JPEG, PNG or WebP, up to 5 MB. Cropped square; metadata removed.")
+
+
+class RegisteredSerializer(serializers.Serializer):
+    """Registration in ``open`` mode: the new account, already signed in."""
+
+    user = MeSerializer()
+    tokens = serializers.DictField(help_text="The same token pair as POST /auth/login/.")

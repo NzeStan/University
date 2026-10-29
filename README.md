@@ -27,6 +27,10 @@ pip install university-podcast            # + shows, episodes, guests, transcrip
 pip install university-analytics          # + privacy-conscious aggregates, active users, institution dashboards
 pip install university-trending           # + configurable trending (velocity, engagement, recency)
 pip install university-search             # + permission-aware search (PostgreSQL FTS, OpenSearch/Elasticsearch)
+pip install university-opportunities      # + jobs, internships, gigs, scholarships; applications with private CVs
+pip install university-messaging          # + direct and group messages, message requests, encryption at rest
+pip install university-promotions         # + reviewed ads and boosts, CPM budgets, signed delivery tokens
+pip install university-subscriptions      # + premium plans and entitlements any module can check
 ```
 
 ---
@@ -211,6 +215,28 @@ tags, privacy-preserving listening analytics, and moderation routed to the host.
 See [docs/modules/analytics.md](docs/modules/analytics.md),
 [docs/modules/trending.md](docs/modules/trending.md) and [docs/modules/search.md](docs/modules/search.md).
 
+### Opportunities, messaging, promotions and subscriptions (Level 2)
+
+- **Opportunities**: jobs, internships, gigs, scholarships and volunteering, optionally limited to
+  an institution's verified members. Applications carry a cover note and a CV kept in private
+  storage and deleted after a retention period. Staff verify employers, and reports go to
+  platform moderators.
+- **Messaging**: direct and group conversations. A first message from someone new lands in
+  Requests, and blocks are indistinguishable from closed requests. Text is encrypted at rest with
+  rotatable keys.
+- **Promotions**: reviewed adverts and boosts of your own posts, events, listings and
+  opportunities. Budgets are bought per thousand impressions through payments, and every item is
+  labelled "Sponsored" by the API. Impressions and clicks count only with single-use signed
+  tokens, and frequency capping stores no viewer.
+- **Subscriptions**: premium plans paid a period at a time, with a grace period, reminders and
+  refunds. Plans grant entitlements that any module checks through Core's
+  `university.core.entitlements` (for example, ad-free browsing and a profile badge).
+
+The institution module also publishes **verified announcements** (urgent ones bypass quiet hours),
+and the anonymous module adds an **anonymous inbox** with the same two-person reveal accountability.
+See [opportunities](docs/modules/opportunities.md), [messaging](docs/modules/messaging.md),
+[promotions](docs/modules/promotions.md) and [subscriptions](docs/modules/subscriptions.md).
+
 ## Quick start
 
 ```bash
@@ -371,6 +397,8 @@ PostgreSQL, as CI does.
 | 9. Marketplace | `university-marketplace`, `university-payments` | ✅ Done |
 | 10. Podcast | `university-podcast`, `university-media` | ✅ Done |
 | 11. Analytics | `university-analytics`, `university-trending`, `university-search` | ✅ Done |
+| 12. Opportunities and messaging | `university-opportunities`, `university-messaging` | ✅ Done |
+| 13. Monetization | `university-promotions`, `university-subscriptions` | ✅ Done |
 
 The planned module boundaries, events and extension points are described in
 [docs/modules](docs/modules/index.md).

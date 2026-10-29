@@ -30,6 +30,22 @@ urlpatterns = [
         name="session-list",
     ),
     path(f"{base}sessions/<uuid:session_id>/semesters/", views.SemesterCreateView.as_view(), name="semester-create"),
+    path(f"{base}announcements/", views.AnnouncementListCreateView.as_view(), name="announcement-list"),
+    path(
+        f"{base}announcements/<uuid:announcement_id>/",
+        views.AnnouncementDetailView.as_view(),
+        name="announcement-detail",
+    ),
+    path(
+        f"{base}announcements/<uuid:announcement_id>/publish/",
+        views.AnnouncementPublishView.as_view(),
+        name="announcement-publish",
+    ),
+    path(
+        f"{base}announcements/<uuid:announcement_id>/archive/",
+        views.AnnouncementArchiveView.as_view(),
+        name="announcement-archive",
+    ),
     path(
         f"{base}<str:kind>/<uuid:object_id>/",
         views.StructureDetailView.as_view(),
@@ -80,4 +96,5 @@ urlpatterns = [
         views.MyVerificationCompleteView.as_view(),
         name="my-verification-complete",
     ),
+    path("me/announcements/", views.MyAnnouncementsView.as_view(), name="my-announcements"),
 ]

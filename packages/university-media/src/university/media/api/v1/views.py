@@ -11,7 +11,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from university.core.api.pagination import PageNumberPagination
-from university.core.api.schema import OpenApiTypes, extend_schema
+from university.core.api.schema import OpenApiTypes, extend_schema, paginated
 from university.core.api.serializers import StrictModelSerializer
 from university.core.exceptions import NotFound
 from university.media import services
@@ -83,7 +83,7 @@ class MediaListCreateView(APIView):
     permission_classes = [permissions.IsAuthenticated]
     parser_classes = [MultiPartParser, FormParser]
 
-    @extend_schema(responses=MediaAssetSerializer(many=True))
+    @extend_schema(responses=paginated(MediaAssetSerializer))
     def get(self, request: Request) -> Response:
         paginator = PageNumberPagination()
         qs = MediaAsset.objects.filter(owner=request.user).order_by("-created_at")

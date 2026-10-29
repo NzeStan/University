@@ -186,3 +186,13 @@ def test_openapi_schema_generates(api_client):
     schema = json.loads(response.content)
     assert "/api/v1/auth/login/" in schema["paths"]
     assert "BearerAuth" in schema["components"]["securitySchemes"]
+
+
+def test_account_delete_documents_its_password_body():
+    from drf_spectacular.generators import SchemaGenerator
+
+    schema = SchemaGenerator().get_schema(request=None, public=True)
+    delete = schema["paths"]["/api/v1/me/"]["delete"]
+    assert "DeleteAccount" in delete["requestBody"]["content"]["application/json"]["schema"]["$ref"]
+    # Other DELETEs stay body-less.
+    assert "requestBody" not in schema["paths"]["/api/v1/me/avatar/"]["delete"]

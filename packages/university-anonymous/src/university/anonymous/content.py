@@ -12,7 +12,7 @@ from typing import Any
 from django.contrib.auth import get_user_model
 
 from university.anonymous.identity import open_identity, owns
-from university.anonymous.models import AnonymousComment, AnonymousPost, Authorship, ContentStatus
+from university.anonymous.models import AnonymousComment, AnonymousMessage, AnonymousPost, Authorship, ContentStatus
 from university.anonymous.selectors import can_view_post
 from university.core.content import ContentAdapter, ContentRef
 from university.core.ids import is_valid_uuid
@@ -35,6 +35,8 @@ class _AnonymousAdapter(ContentAdapter):
         return manager.filter(pk=object_id).first()
 
     def _scope(self, obj: Any) -> tuple[str, str] | None:
+        if isinstance(obj, AnonymousMessage):
+            return None
         post = obj if isinstance(obj, AnonymousPost) else obj.post
         return (post.scope_type, post.scope_id) if post.scope_type else None
 
@@ -101,3 +103,28 @@ class AnonymousCommentAdapter(_AnonymousAdapter):
     def can_view(self, viewer: Any, object_id: Any) -> bool:
         comment = self._get(object_id)
         return comment is not None and comment.status == ContentStatus.PUBLISHED and can_view_post(viewer, comment.post)
+
+
+class AnonymousMessageAdapter(_AnonymousAdapter):
+    """Inbox messages: the recipient (who can report them) and, once answered publicly, anyone.
+
+    Reported messages follow the anonymous-content policy: platform moderators may hide, restore or
+    remove them, and sanctioning the sender requires ``anonymous.authors.sanction`` (identity is
+    resolved only through that audited path). Messages are never indexed for search.
+    """
+
+    content_type = "anonymous.message"
+    label = "Anonymous message"
+    kind = Authorship.Kind.MESSAGE
+    model = AnonymousMessage
+
+    def iter_ids(self) -> Any:
+        return ()
+
+    def can_view(self, viewer: Any, object_id: Any) -> bool:
+        message = self._get(object_id)
+        if message is None or message.status != ContentStatus.PUBLISHED:
+            return False
+        if viewer is not None and getattr(viewer, "is_authenticated", False) and message.inbox.user_id == viewer.pk:
+            return True
+        return message.answer_public

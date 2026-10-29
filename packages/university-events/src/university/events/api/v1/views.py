@@ -13,7 +13,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from university.core.api.pagination import PageNumberPagination
-from university.core.api.schema import OpenApiParameter, OpenApiTypes, extend_schema
+from university.core.api.schema import OpenApiParameter, OpenApiTypes, extend_schema, paginated
 from university.core.exceptions import AuthenticationFailed, NotFound, PermissionDenied
 from university.events import selectors, services
 from university.events.api.v1 import serializers as s
@@ -86,7 +86,7 @@ class EventListCreateView(APIView):
 
     @extend_schema(
         parameters=[OpenApiParameter(p, str) for p in DISCOVERY_PARAMS],
-        responses=s.EventsEventListSerializer(many=True),
+        responses=paginated(s.EventsEventListSerializer),
     )
     def get(self, request: Request) -> Response:
         qs = selectors.discover(request.user, request.query_params)
@@ -359,7 +359,7 @@ class AttendeeListView(APIView):
 
     @extend_schema(
         parameters=[OpenApiParameter("status", str), OpenApiParameter("checked_in", bool)],
-        responses=s.EventsAttendeeSerializer(many=True),
+        responses=paginated(s.EventsAttendeeSerializer),
     )
     def get(self, request: Request, event_id: Any) -> Response:
         event = _staff_view(request, event_id)
@@ -450,7 +450,7 @@ class MyRegistrationsView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     @extend_schema(
-        parameters=[OpenApiParameter("upcoming", bool)], responses=s.EventsMyRegistrationSerializer(many=True)
+        parameters=[OpenApiParameter("upcoming", bool)], responses=paginated(s.EventsMyRegistrationSerializer)
     )
     def get(self, request: Request) -> Response:
         raw = request.query_params.get("upcoming")
@@ -462,7 +462,7 @@ class MyRegistrationsView(APIView):
 class MyOrganizedEventsView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
-    @extend_schema(responses=s.EventsEventListSerializer(many=True))
+    @extend_schema(responses=paginated(s.EventsEventListSerializer))
     def get(self, request: Request) -> Response:
         return _paginate(self, request, selectors.organizing(request.user), s.EventsEventListSerializer, _list_context)
 
@@ -473,7 +473,7 @@ class VenueListCreateView(APIView):
 
     @extend_schema(
         parameters=[OpenApiParameter(p, str) for p in ("q", "scope_type", "scope_id", "country")],
-        responses=s.EventsVenueSerializer(many=True),
+        responses=paginated(s.EventsVenueSerializer),
     )
     def get(self, request: Request) -> Response:
         return _paginate(self, request, selectors.venues(request.query_params), s.EventsVenueSerializer)

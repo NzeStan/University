@@ -103,6 +103,104 @@ version), **Removed**, **Fixed**, **Security**.
 - Owners and admins hold `events.manage` and `podcast.manage` at their community's scope (unused unless
   `university-events` is installed), so they can host community events.
 
+## Release 2026-10-28
+
+New packages start at 0.1.0. Every changed package now needs `university-core>=0.1.1`, so
+release core first.
+
+### university-core 0.1.1
+
+#### Added
+
+- Profile photos: `POST/DELETE /api/v1/me/avatar/`. Images are checked by content, re-encoded to a
+  512px WebP with EXIF and GPS removed, and audited. `avatar_url` appears on the current user and
+  public profiles, is included in data exports, and is deleted on purge.
+- `university.users.refs.person_ref()` and `PersonRefSerializer`: one documented person shape
+  (`id`, `handle`, `display_name`, `avatar_url`) shared by every module.
+- `university.core.api.schema.paginated()` and `UniversityAutoSchema`: views that paginate by hand
+  document their real paginated response (page, cursor or offset), and keep `_list` operation ids.
+- `university.core.entitlements` with `Hook.USER_ENTITLEMENTS`: premium features can be checked
+  (`has_entitlement`, `ensure_entitlement`) without depending on how they were bought.
+
+#### Fixed
+
+- The OpenAPI schema described several paginated list endpoints as plain lists.
+- `GET /me/consents/` is documented as a mapping.
+- `DELETE /me/` documents the password it requires (views opt in with `documented_delete_body`).
+
+### university-anonymous 0.1.1
+
+#### Added
+
+- Anonymous inbox: members open an inbox and receive anonymous messages, which they can answer
+  publicly, unpublish, delete, or block the sender of (silently, with a per-inbox sender token).
+  The sender's identity is sealed like anonymous posts, and two-person reveal works for messages
+  too. Messages are rate limited and covered by export and purge.
+- Fully documented response serializers.
+
+### university-institution 0.1.2
+
+#### Added
+
+- Verified institutional announcements: drafts, publishing, archiving, audiences, categories and
+  priorities. Urgent announcements reach every member and bypass quiet hours. Permission
+  `institution.announcements.publish`, role `institution_communications`.
+
+### university-notifications 0.1.1
+
+#### Added
+
+- Categories `inbox`, `announcements`, `urgent_announcements` (mandatory), `opportunities`,
+  `messages` and `promotions`, with verbs and handlers for the anonymous inbox, announcements,
+  opportunities, messaging, promotions and subscriptions.
+
+### university-search 0.1.2
+
+#### Added
+
+- Sources for institution announcements and opportunities.
+
+### university-marketplace 0.1.1
+
+#### Added
+
+- Accommodation categories.
+
+### university-social 0.1.1
+
+#### Changed
+
+- Posts, polls, mentions, reposts, counts and viewer state are fully documented in OpenAPI;
+  people include `avatar_url`.
+
+### university-community 0.1.2, university-creator 0.1.2, university-events 0.1.2, university-media 0.1.1, university-moderation 0.1.2, university-payments 0.1.2, university-podcast 0.1.2
+
+#### Fixed
+
+- Paginated list endpoints are documented as paginated; people include `avatar_url`.
+
+### university-opportunities 0.1.0 — initial release
+
+- Jobs, internships, gigs, scholarships and volunteering with audiences, in-app applications,
+  private CVs with retention, verified employers and reports. See
+  [docs/modules/opportunities.md](docs/modules/opportunities.md).
+
+### university-messaging 0.1.0 — initial release
+
+- Direct and group messaging with requests, read receipts, edits, tombstones and Fernet
+  encryption at rest. See [docs/modules/messaging.md](docs/modules/messaging.md).
+
+### university-promotions 0.1.0 — initial release
+
+- Reviewed adverts and boosts, paid budgets with refunds on rejection, signed single-use delivery
+  tokens, privacy-preserving frequency caps and stats, and reports. See
+  [docs/modules/promotions.md](docs/modules/promotions.md).
+
+### university-subscriptions 0.1.0 — initial release
+
+- Premium plans, paid periods, renewals with reminders and grace, refunds and entitlements. See
+  [docs/modules/subscriptions.md](docs/modules/subscriptions.md).
+
 ## university-events 0.1.1 — 2026-10-26
 
 ### Fixed

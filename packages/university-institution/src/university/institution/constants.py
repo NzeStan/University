@@ -35,3 +35,23 @@ OPEN_VERIFICATION_STATUSES = (VerificationStatus.PENDING_REVIEW, VerificationSta
 
 INSTITUTION_SCOPE = "institution"
 CAMPUS_SCOPE = "campus"
+
+
+class AnnouncementStatus(models.TextChoices):
+    DRAFT = "draft", _("Draft")
+    PUBLISHED = "published", _("Published")
+    ARCHIVED = "archived", _("Archived")
+
+
+class AnnouncementAudience(models.TextChoices):
+    PUBLIC = "public", _("Everyone")
+    MEMBERS = "members", _("Verified members")
+
+
+class AnnouncementPriority(models.TextChoices):
+    NORMAL = "normal", _("Normal")
+    IMPORTANT = "important", _("Important")
+    URGENT = "urgent", _("Urgent")
+
+
+ANNOUNCEMENT_CATEGORIES = ["general", "academic", "exams", "admissions", "events", "welfare", "security", "emergency"]

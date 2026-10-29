@@ -14,6 +14,7 @@ from university.core.hooks import Hook, hooks
 from university.core.http import ClientMeta, storable_ip
 from university.core.serialization import to_jsonable
 from university.users.models import ConsentRecord
+from university.users.services.avatars import avatar_url
 
 
 def record_consent(
@@ -63,6 +64,7 @@ def export_user_data(user: Any) -> dict[str, Any]:
             "email": user.email,
             "handle": user.handle,
             "display_name": user.display_name,
+            "avatar_url": avatar_url(user),
             "phone_number": user.phone_number,
             "email_verified_at": user.email_verified_at,
             "phone_verified_at": user.phone_verified_at,

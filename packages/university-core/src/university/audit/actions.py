@@ -64,6 +64,8 @@ class AuditAction:
     ACCOUNT_DELETED = "account.deleted"
     ACCOUNT_RESTORED = "account.restored"
     ACCOUNT_PURGED = "account.purged"
+    PROFILE_PHOTO_CHANGED = "account.photo.changed"
+    PROFILE_PHOTO_REMOVED = "account.photo.removed"
 
     # Privacy
     DATA_EXPORTED = "privacy.data.exported"

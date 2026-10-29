@@ -103,5 +103,59 @@ __all__ = [
     "extend_schema_field",
     "extend_schema_view",
     "inline_serializer",
+    "paginated",
     "spectacular_settings",
 ]
+
+
+_PAGINATED: dict[tuple[str, str], Any] = {}
+
+
+def paginated(item: Any, *, style: str = "page") -> Any:
+    """Response schema for a list that a view paginates itself.
+
+    Views that call a paginator by hand must say so, or the published schema describes a bare
+    array while clients receive a page object::
+
+        @extend_schema(responses=paginated(CommunitySerializer))            # count/next/previous/results
+        @extend_schema(responses=paginated(PostSchema, style="cursor"))     # next/previous/results
+        @extend_schema(responses=paginated(PostSchema, style="offset"))     # offset/limit/results
+
+    ``item`` is a serializer class or instance. The component is named ``Paginated<Item>List``,
+    ``Cursor<Item>List`` or ``Offset<Item>List``.
+    """
+    from rest_framework import serializers
+
+    if style not in ("page", "cursor", "offset"):
+        raise ValueError(f"Unknown pagination style {style!r}")
+    if isinstance(item, serializers.BaseSerializer):
+        item = getattr(item, "child", item).__class__
+    base = item.__name__.removesuffix("Serializer")
+    key = (f"{item.__module__}.{item.__qualname__}", style)
+    if key in _PAGINATED:
+        return _PAGINATED[key]
+    if style == "page":
+        fields: dict[str, Any] = {
+            "count": serializers.IntegerField(),
+            "next": serializers.URLField(allow_null=True),
+            "previous": serializers.URLField(allow_null=True),
+        }
+        name = f"Paginated{base}ListSerializer"
+    elif style == "cursor":
+        fields = {"next": serializers.URLField(allow_null=True), "previous": serializers.URLField(allow_null=True)}
+        name = f"Cursor{base}ListSerializer"
+    else:
+        fields = {"offset": serializers.IntegerField(), "limit": serializers.IntegerField()}
+        name = f"Offset{base}ListSerializer"
+    fields["results"] = item(many=True)
+    attrs = {**fields, "__module__": item.__module__, "_university_paginated": True}
+    _PAGINATED[key] = type(name, (serializers.Serializer,), attrs)
+    return _PAGINATED[key]
+
+
+def _is_paginated(serializer: Any) -> bool:
+    if isinstance(serializer, dict) and serializer:
+        serializer = {str(code): value for code, value in serializer.items()}
+        serializer = serializer[min(serializer)]
+    cls = serializer if isinstance(serializer, type) else type(serializer)
+    return bool(getattr(cls, "_university_paginated", False))

@@ -37,3 +37,6 @@ staticfiles/
 .vscode/
 .DS_Store
 Thumbs.db
+
+# GistLoop is a separate project with its own repository.
+/GistLoop/

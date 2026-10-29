@@ -132,7 +132,11 @@ def test_media_must_belong_to_the_editor(auth_client, user, other_user):
         .status_code
         == 404
     )
-    image = upload(host, b"\x89PNG\r\n\x1a\n" + b"\x00" * 64, name="cover.png")
+    image = upload(
+        host,
+        b"\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01\x08\x02\x00\x00\x00\x90wS\xde\x00\x00\x00\x0cIDATx\xdac\xc8\xd5\xb8\t\x00\x02t\x01o\xfbJ\xd2\xe1\x00\x00\x00\x00IEND\xaeB`\x82",
+        name="cover.png",
+    )
     wrong = host.post(f"{BASE}/{podcast['id']}/episodes/", {"title": "x", "audio_media_id": image}, format="json")
     assert wrong.json()["error"]["code"] == "wrong_media_kind"
 
